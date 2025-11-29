@@ -311,6 +311,16 @@ const QuizContainer: React.FC = () => {
         window.location.reload();
     };
 
+    const renderQuitButton = () => (
+        <button
+            onClick={handleReset}
+            className="mt-6 flex items-center justify-center mx-auto text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-6 py-2.5 rounded-full transition-all duration-200 text-sm font-medium group border border-transparent hover:border-indigo-100"
+        >
+            <span className="mr-2 group-hover:-translate-x-1 transition-transform">🏠</span>
+            Quit & Return to Home
+        </button>
+    );
+
     if (step === 'welcome') {
         return <WelcomeScreen onStart={handleStart} />;
     }
@@ -319,7 +329,7 @@ const QuizContainer: React.FC = () => {
         switch (dataStep) {
             case 0:
                 return (
-                    <div className="min-h-screen bg-gray-100 py-12 px-4">
+                    <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
                             title="How old are you?"
                             description="This helps us tailor the questions to your life stage."
@@ -330,11 +340,12 @@ const QuizContainer: React.FC = () => {
                             min={10}
                             max={80}
                         />
+                        {renderQuitButton()}
                     </div>
                 );
             case 1:
                 return (
-                    <div className="min-h-screen bg-gray-100 py-12 px-4">
+                    <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
                             title="What do you do?"
                             description="Your occupation or role helps us create relevant scenarios."
@@ -344,11 +355,12 @@ const QuizContainer: React.FC = () => {
                             onChange={(val) => handleDataUpdate('occupation', val)}
                             onNext={handleDataNext}
                         />
+                        {renderQuitButton()}
                     </div>
                 );
             case 2:
                 return (
-                    <div className="min-h-screen bg-gray-100 py-12 px-4">
+                    <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
                             title="How do you identify?"
                             inputType="select"
@@ -362,11 +374,12 @@ const QuizContainer: React.FC = () => {
                                 { label: 'Prefer not to say', value: 'Prefer not to say' }
                             ]}
                         />
+                        {renderQuitButton()}
                     </div>
                 );
             case 3:
                 return (
-                    <div className="min-h-screen bg-gray-100 py-12 px-4">
+                    <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
                             title="Any hobbies or interests?"
                             description="Optional. We might use this to flavor the questions."
@@ -376,6 +389,7 @@ const QuizContainer: React.FC = () => {
                             onChange={(val) => handleDataUpdate('interests', val)}
                             onNext={handleDataNext}
                         />
+                        {renderQuitButton()}
                     </div>
                 );
             default:
@@ -393,6 +407,7 @@ const QuizContainer: React.FC = () => {
                         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600 mx-auto mb-4"></div>
                         <p className="text-lg text-gray-600">Generating question {currentQuestionIndex + 1}...</p>
                         <p className="text-sm text-gray-400 mt-2">Crafting a personalized question just for you.</p>
+                        {renderQuitButton()}
                     </div>
                 </div>
             );
@@ -406,6 +421,10 @@ const QuizContainer: React.FC = () => {
                     currentQuestionIndex={currentQuestionIndex}
                     totalQuestions={baseQuestions.length}
                 />
+                
+                <div className="max-w-2xl lg:max-w-4xl mx-auto text-center">
+                    {renderQuitButton()}
+                </div>
             </div>
         );
     }
