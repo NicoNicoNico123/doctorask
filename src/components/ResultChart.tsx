@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ResultChartProps {
     scores: {
@@ -14,11 +15,13 @@ interface ResultChartProps {
 }
 
 const ResultChart: React.FC<ResultChartProps> = ({ scores }) => {
+    const { t } = useTranslation();
+
     const dimensions = [
-        { left: 'E', right: 'I', leftLabel: 'Extraversion', rightLabel: 'Introversion', leftScore: scores.E, rightScore: scores.I },
-        { left: 'S', right: 'N', leftLabel: 'Sensing', rightLabel: 'Intuition', leftScore: scores.S, rightScore: scores.N },
-        { left: 'T', right: 'F', leftLabel: 'Thinking', rightLabel: 'Feeling', leftScore: scores.T, rightScore: scores.F },
-        { left: 'J', right: 'P', leftLabel: 'Judging', rightLabel: 'Perceiving', leftScore: scores.J, rightScore: scores.P },
+        { left: 'E', right: 'I', leftLabel: t('resultChart.extraversion'), rightLabel: t('resultChart.introversion'), leftScore: scores.E, rightScore: scores.I },
+        { left: 'S', right: 'N', leftLabel: t('resultChart.sensing'), rightLabel: t('resultChart.intuition'), leftScore: scores.S, rightScore: scores.N },
+        { left: 'T', right: 'F', leftLabel: t('resultChart.thinking'), rightLabel: t('resultChart.feeling'), leftScore: scores.T, rightScore: scores.F },
+        { left: 'J', right: 'P', leftLabel: t('resultChart.judging'), rightLabel: t('resultChart.perceiving'), leftScore: scores.J, rightScore: scores.P },
     ];
 
     return (

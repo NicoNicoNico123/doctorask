@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DataCollectionCardProps {
     title: string;
@@ -25,6 +26,8 @@ const DataCollectionCard: React.FC<DataCollectionCardProps> = ({
     max,
     placeholder
 }) => {
+    const { t } = useTranslation();
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (value) onNext();
@@ -104,7 +107,7 @@ const DataCollectionCard: React.FC<DataCollectionCardProps> = ({
                         type="submit"
                         className="w-full bg-indigo-600 text-white py-4 px-6 rounded-xl hover:bg-indigo-700 transition duration-200 font-bold text-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                     >
-                        Next
+                        {t('dataCollection.nextButton')}
                     </button>
                 )}
             </form>

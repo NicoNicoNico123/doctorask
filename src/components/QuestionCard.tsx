@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Option {
     text: string;
@@ -26,11 +27,13 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
     currentQuestionIndex,
     totalQuestions
 }) => {
+    const { t } = useTranslation();
+
     return (
         <div className="max-w-2xl lg:max-w-4xl mx-auto bg-white p-8 lg:p-12 rounded-xl shadow-lg transition-all duration-300">
             <div className="mb-8 lg:mb-12">
                 <div className="flex justify-between text-sm lg:text-base text-gray-500 mb-3 font-medium">
-                    <span>Question {currentQuestionIndex + 1} of {totalQuestions}</span>
+                    <span>{t('question.progress', { current: currentQuestionIndex + 1, total: totalQuestions })}</span>
                     <span>{Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 lg:h-4">
@@ -52,7 +55,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 >
                     <div className="flex items-center">
                         <span className="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-500 rounded-full mr-4 lg:mr-6 group-hover:bg-indigo-600 group-hover:text-white transition font-bold text-lg lg:text-xl">
-                            A
+                            {t('question.optionA')}
                         </span>
                         <span className="text-gray-700 group-hover:text-indigo-900 text-lg lg:text-xl font-medium">{question.optionA.text}</span>
                     </div>
@@ -64,7 +67,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 >
                     <div className="flex items-center">
                         <span className="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0 flex items-center justify-center bg-gray-100 text-gray-500 rounded-full mr-4 lg:mr-6 group-hover:bg-indigo-600 group-hover:text-white transition font-bold text-lg lg:text-xl">
-                            B
+                            {t('question.optionB')}
                         </span>
                         <span className="text-gray-700 group-hover:text-indigo-900 text-lg lg:text-xl font-medium">{question.optionB.text}</span>
                     </div>

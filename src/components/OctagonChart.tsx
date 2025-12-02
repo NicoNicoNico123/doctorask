@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ResultChartProps {
     scores: {
@@ -14,6 +15,7 @@ interface ResultChartProps {
 }
 
 const OctagonChart: React.FC<ResultChartProps> = ({ scores }) => {
+    const { t } = useTranslation();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [dimensions, setDimensions] = useState({ width: 400, height: 400 });
 
@@ -319,11 +321,11 @@ const OctagonChart: React.FC<ResultChartProps> = ({ scores }) => {
     return (
         <div className="w-full max-w-lg mx-auto my-8">
             <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Internal Octagon Evaluation</h3>
-                <p className="text-sm text-gray-600">Comprehensive analysis of your MBTI preference distribution</p>
+                <h3 className="text-lg font-semibold text-gray-800">{t('octagonChart.title')}</h3>
+                <p className="text-sm text-gray-600">{t('octagonChart.subtitle')}</p>
                 <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium">
-                    Balance Score: {balanceScore}%
-                    {balanceScore >= 70 ? ' 🎯 Well-Balanced' : balanceScore >= 50 ? ' ⚖️ Moderate' : ' 📈 Strong Preferences'}
+                    {t('octagonChart.balanceScore')}: {balanceScore}%
+                    {balanceScore >= 70 ? ` ${t('octagonChart.wellBalanced')}` : balanceScore >= 50 ? ` ${t('octagonChart.moderate')}` : ` ${t('octagonChart.strongPreferences')}`}
                 </div>
             </div>
 
@@ -340,21 +342,21 @@ const OctagonChart: React.FC<ResultChartProps> = ({ scores }) => {
                 <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="flex items-center">
                         <div className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mr-2"></div>
-                        <span className="text-gray-700 font-medium">Your profile</span>
+                        <span className="text-gray-700 font-medium">{t('octagonChart.yourProfile')}</span>
                     </div>
                     <div className="flex items-center">
                         <div className="w-3 h-3 border-2 border-gray-300 rounded-full mr-2"></div>
-                        <span className="text-gray-600">100% reference</span>
+                        <span className="text-gray-600">{t('octagonChart.reference')}</span>
                     </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
-                    <div className="font-medium text-gray-700 mb-1">Understanding the Octagon:</div>
+                    <div className="font-medium text-gray-700 mb-1">{t('octagonChart.understandingTheOctagon')}</div>
                     <ul className="space-y-1">
-                        <li>• <strong>Outer rings</strong> represent 100% preference strength</li>
-                        <li>• <strong>Colored area</strong> shows your unique personality profile</li>
-                        <li>• <strong>Balanced score</strong> indicates preference distribution</li>
-                        <li>• <strong>8 dimensions</strong> show both sides of each MBTI pair</li>
+                        <li>• <strong>{t('octagonChart.outerRings')}</strong></li>
+                        <li>• <strong>{t('octagonChart.coloredArea')}</strong></li>
+                        <li>• <strong>{t('octagonChart.balancedScore')}</strong></li>
+                        <li>• <strong>{t('octagonChart.eightDimensions')}</strong></li>
                     </ul>
                 </div>
 

@@ -1,0 +1,131 @@
+{
+  "welcome": {
+    "title": "MBTI Personality Quiz",
+    "description": "Discover your true self with questions personalized just for you. Uncover insights about your strengths, relationships, and career path.",
+    "startButton": "Start Quiz"
+  },
+  "dataCollection": {
+    "title": "Let's Personalize Your Experience",
+    "subtitle": "This helps us tailor the questions to your life stage and interests.",
+    "ageQuestion": "How old are you?",
+    "ageDescription": "Age helps us understand your life stage and experiences.",
+    "occupationQuestion": "What do you do?",
+    "occupationDescription": "Your work context helps create relevant scenarios.",
+    "occupationPlaceholder": "e.g. Software Engineer, Student, Artist",
+    "genderQuestion": "How do you identify?",
+    "genderDescription": "This helps us consider different social perspectives.",
+    "hobbiesQuestion": "Any hobbies or interests?",
+    "hobbiesDescription": "Your interests help us create engaging examples.",
+    "hobbiesPlaceholder": "e.g. Hiking, Gaming, Reading Sci-Fi",
+    "nextButton": "Next",
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "nonBinary": "Non-binary",
+      "preferNotToSay": "Prefer not to say"
+    }
+  },
+  "question": {
+    "progress": "Question {{current}} of {{total}}",
+    "optionA": "A",
+    "optionB": "B"
+  },
+  "navigation": {
+    "previous": "Previous",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "quit": {
+    "returnToHome": "Quit & Return to Home"
+  },
+  "results": {
+    "title": "Your Personality Type",
+    "subtitle": "Based on your responses, here's your personality analysis:",
+    "retakeTest": "🔄 Retake Test",
+    "shareResults": "📤 Share Results",
+    "saveResults": "🖨️ Save Results",
+    "continueChat": "Continue exploring your personality",
+    "analysisTitle": "Personality Analysis",
+    "chatTitle": "Ask Questions About Your Type",
+    "chatSubtitle": "Chat with me about your {{personalityType}} personality type",
+    "yourProfile": "Your Profile",
+    "quickActions": "Quick Actions",
+    "disclaimer": "This MBTI assessment is for educational and self-discovery purposes only. It's not a clinical diagnosis. Consider this as a starting point for understanding yourself better.",
+    "analysisSubtitle": "AI-powered insights based on your {{personalityType}} personality type",
+    "analysis": {
+      "tabs": {
+        "overview": "Overview",
+        "career": "Career",
+        "relationships": "Relationships",
+        "growth": "Growth"
+      },
+      "overview": "Summary",
+      "strengths": "Strengths",
+      "growthAreas": "Areas for Growth",
+      "careerSuggestions": "Career Suggestions",
+      "relationshipStyle": "Relationship Style",
+      "developmentTips": "Personal Growth Tips",
+      "fallbackSummary": "Analysis could not be generated",
+      "strength1": "Self-awareness",
+      "strength2": "Adaptability",
+      "challenge1": "Self-reflection",
+      "challenge2": "Growth mindset",
+      "career1": "Roles matching your interests",
+      "tip1": "Continue self-discovery",
+      "tip2": "Develop your strengths"
+    }
+  },
+  "language": {
+    "switch": "Language",
+    "english": "English",
+    "chinese": "中文 (繁體)"
+  },
+  "loading": {
+    "analyzing": "Analyzing your responses...",
+    "generating": "Generating personalized insights...",
+    "chatResponse": "Thinking..."
+  },
+  "error": {
+    "networkError": "Network error occurred. Please check your connection and try again.",
+    "apiError": "Something went wrong. Please try again.",
+    "validationError": "Please answer all questions Before submitting.",
+    "genericError": "An unexpected error occurred. Please try again."
+  },
+  "chat": {
+    "placeholder": "Ask me anything about your personality type...",
+    "suggestedQuestionsTitle": "You can ask questions like:",
+    "suggestedQuestions": [
+      "What are my main strengths?",
+      "What careers would suit me well?",
+      "How do I handle relationships?",
+      "What should I work on improving?"
+    ],
+    "welcomeMessage": "Hi! I'm here to answer your questions about your {{personalityType}} personality type. Feel free to ask me anything about your strengths, relationships, career paths, or personal growth!",
+    "errorMessage": "I'm sorry, I'm having trouble answering that question right now. Please try again or ask me something else about your personality type."
+  },
+  "resultChart": {
+    "extraversion": "Extraversion",
+    "introversion": "Introversion",
+    "sensing": "Sensing",
+    "intuition": "Intuition",
+    "thinking": "Thinking",
+    "feeling": "Feeling",
+    "judging": "Judging",
+    "perceiving": "Perceiving"
+  },
+  "octagonChart": {
+    "title": "Internal Octagon Evaluation",
+    "subtitle": "Comprehensive analysis of your MBTI preference distribution",
+    "balanceScore": "Balance Score",
+    "wellBalanced": "🎯 Well-Balanced",
+    "moderate": "⚖️ Moderate",
+    "strongPreferences": "📈 Strong Preferences",
+    "yourProfile": "Your profile",
+    "reference": "100% reference",
+    "understandingTheOctagon": "Understanding the Octagon:",
+    "outerRings": "Outer rings represent 100% preference strength",
+    "coloredArea": "Colored area shows your unique personality profile",
+    "balancedScore": "Balanced score indicates preference distribution",
+    "eightDimensions": "8 dimensions show both sides of each MBTI pair"
+  }
+}

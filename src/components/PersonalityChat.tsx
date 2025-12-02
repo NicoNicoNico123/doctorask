@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { askPersonalityQuestion } from '../services/openaiService';
 
 interface ChatMessage {
@@ -19,11 +20,12 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
   scores,
   userContext
 }) => {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       type: 'assistant',
-      message: `Hi! I'm here to answer your questions about your ${personalityType} personality type. Feel free to ask me anything about your strengths, relationships, career paths, or personal growth!`,
+      message: t('chat.welcomeMessage', { personalityType }),
       timestamp: new Date()
     }
   ]);
@@ -31,7 +33,8 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const suggestedQuestions = [
+  // Define suggested questions with proper typing
+  const suggestedQuestions: string[] = [
     "What are my biggest strengths?",
     "How do I handle stress best?",
     "What careers suit me well?",
@@ -83,7 +86,7 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        message: "I'm sorry, I'm having trouble answering that question right now. Please try again or ask me something else about your personality type.",
+        message: t('chat.errorMessage'),
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -108,8 +111,8 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="mb-4">
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">Ask About Your Personality</h3>
-        <p className="text-gray-600">Chat with me about your {personalityType} personality type</p>
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">{t('results.chatTitle')}</h3>
+        <p className="text-gray-600">{t('results.chatSubtitle', { personalityType })}</p>
       </div>
 
       {/* Chat Messages */}
@@ -144,7 +147,7 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
               <div className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-2 max-w-xs lg:max-w-md">
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-t-4 border-b-4 border-indigo-600"></div>
-                  <span className="text-sm">Thinking...</span>
+                  <span className="text-sm">{t('loading.chatResponse')}</span>
                 </div>
               </div>
             </div>
@@ -157,7 +160,7 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
       {/* Suggested Questions */}
       {messages.length <= 2 && (
         <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">You can ask questions like:</p>
+          <p className="text-sm text-gray-600 mb-2">{t('chat.suggestedQuestionsTitle')}</p>
           <div className="flex flex-wrap gap-2">
             {suggestedQuestions.map((question, index) => (
               <button
@@ -179,7 +182,7 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Ask me anything about your personality..."
+          placeholder={t('chat.placeholder')}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           disabled={isLoading}
         />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getPersonalityAnalysis } from '../services/openaiService';
 
 interface PersonalityAnalysisProps {
@@ -21,6 +22,7 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
   scores,
   userContext
 }) => {
+  const { t } = useTranslation();
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,24 +34,45 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
         setLoading(true);
         setError(null);
         const analysisData = await getPersonalityAnalysis(personalityType, scores, userContext);
-        setAnalysis(analysisData);
+
+        // Validate and sanitize the received data
+        const sanitizedData: AnalysisData = {
+          summary: analysisData?.summary || t('results.analysis.overview', 'No summary available'),
+          strengths: Array.isArray(analysisData?.strengths) ? analysisData.strengths : [],
+          challenges: Array.isArray(analysisData?.challenges) ? analysisData.challenges : [],
+          careerSuggestions: Array.isArray(analysisData?.careerSuggestions) ? analysisData.careerSuggestions : [],
+          relationships: analysisData?.relationships || t('results.analysis.relationships', 'No relationship data available'),
+          growthTips: Array.isArray(analysisData?.growthTips) ? analysisData.growthTips : []
+        };
+
+        setAnalysis(sanitizedData);
       } catch (err) {
-        setError('Failed to generate personality analysis. Please try again.');
+        setError(t('error.genericError') || 'Failed to generate personality analysis. Please try again.');
         console.error('Analysis error:', err);
+
+        // Set fallback data to prevent undefined errors
+        setAnalysis({
+          summary: t('results.analysis.fallbackSummary', 'Analysis could not be generated'),
+          strengths: [t('results.analysis.strength1', 'Self-awareness'), t('results.analysis.strength2', 'Adaptability')],
+          challenges: [t('results.analysis.challenge1', 'Self-reflection'), t('results.analysis.challenge2', 'Growth mindset')],
+          careerSuggestions: [t('results.analysis.career1', 'Roles matching your interests')],
+          relationships: t('results.analysis.relationshipStyle', 'Your unique relationship style'),
+          growthTips: [t('results.analysis.tip1', 'Continue self-discovery'), t('results.analysis.tip2', 'Develop your strengths')]
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchAnalysis();
-  }, [personalityType, scores, userContext]);
+  }, [personalityType, scores, userContext, t]);
 
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-b-4 border-indigo-600 mr-3"></div>
-          <span className="text-gray-600">Analyzing your personality...</span>
+          <span className="text-gray-600">{t('loading.analyzing')}</span>
         </div>
       </div>
     );
@@ -64,7 +87,7 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
             onClick={() => window.location.reload()}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
           >
-            Try Again
+            {t('error.tryAgain')}
           </button>
         </div>
       </div>
@@ -74,17 +97,24 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
   if (!analysis) return null;
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: '🎯' },
-    { id: 'career', label: 'Career', icon: '💼' },
-    { id: 'relationships', label: 'Relationships', icon: '👥' },
-    { id: 'growth', label: 'Growth', icon: '🌱' }
+    { id: 'overview', label: t('results.analysis.tabs.overview'), icon: '🎯' },
+    { id: 'career', label: t('results.analysis.tabs.career'), icon: '💼' },
+    { id: 'relationships', label: t('results.analysis.tabs.relationships'), icon: '👥' },
+    { id: 'growth', label: t('results.analysis.tabs.growth'), icon: '🌱' }
   ];
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <div className="mb-6">
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">Your Personality Analysis</h3>
-        <p className="text-gray-600">AI-powered insights based on your {personalityType} personality type</p>
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">{t('results.analysisTitle')}</h3>
+        <p className="text-gray-600">
+          {(() => {
+            const key = 'results.analysisSubtitle';
+            console.log('Translation key:', key, 'Personality type:', personalityType);
+            console.log('Translation result:', t(key, { personalityType }));
+            return t(key, { personalityType }) || t('results.subtitle');
+          })()}
+        </p>
       </div>
 
       {/* Tab Navigation */}
@@ -110,12 +140,12 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">Summary</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3">{t('results.analysis.overview')}</h4>
               <p className="text-gray-600 leading-relaxed">{analysis.summary}</p>
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">Strengths</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3">{t('results.analysis.strengths')}</h4>
               <ul className="space-y-2">
                 {analysis.strengths.map((strength, index) => (
                   <li key={index} className="flex items-start">
@@ -127,7 +157,7 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">Areas for Growth</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3">{t('results.analysis.growthAreas')}</h4>
               <ul className="space-y-2">
                 {analysis.challenges.map((challenge, index) => (
                   <li key={index} className="flex items-start">
@@ -142,7 +172,7 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
 
         {activeTab === 'career' && (
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3">Career Suggestions</h4>
+            <h4 className="text-lg font-semibold text-gray-800 mb-3">{t('results.analysis.careerSuggestions')}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {analysis.careerSuggestions.map((career, index) => (
                 <div key={index} className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
@@ -158,7 +188,7 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
 
         {activeTab === 'relationships' && (
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3">Relationship Style</h4>
+            <h4 className="text-lg font-semibold text-gray-800 mb-3">{t('results.analysis.relationshipStyle')}</h4>
             <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
               <p className="text-gray-700 leading-relaxed">{analysis.relationships}</p>
             </div>
@@ -167,7 +197,7 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
 
         {activeTab === 'growth' && (
           <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3">Personal Growth Tips</h4>
+            <h4 className="text-lg font-semibold text-gray-800 mb-3">{t('results.analysis.developmentTips')}</h4>
             <div className="space-y-3">
               {analysis.growthTips.map((tip, index) => (
                 <div key={index} className="flex items-start bg-green-50 p-4 rounded-lg border border-green-200">

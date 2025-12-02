@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import WelcomeScreen from './WelcomeScreen';
 import DataCollectionCard from './DataCollectionCard';
 import QuestionCard from './QuestionCard';
@@ -6,7 +7,7 @@ import OctagonChart from './OctagonChart';
 import PersonalityAnalysis from './PersonalityAnalysis';
 import PersonalityChat from './PersonalityChat';
 import { baseQuestions } from '../data/questions';
-import { generateSingleQuestion, UserContext, Question } from '../services/openaiService';
+import { generateSingleQuestion, UserContext, Question, BaseQuestion } from '../services/openaiService';
 
 const STORAGE_KEY = 'mbti_quiz_state';
 
@@ -22,6 +23,7 @@ interface QuizState {
 }
 
 const QuizContainer: React.FC = () => {
+    const { t } = useTranslation();
     const [step, setStep] = useState<'welcome' | 'data-collection' | 'quiz' | 'results'>('welcome');
     const [dataStep, setDataStep] = useState(0);
 
@@ -55,17 +57,42 @@ const QuizContainer: React.FC = () => {
         if (savedState) {
             try {
                 const parsed: QuizState = JSON.parse(savedState);
-                setStep(parsed.step);
-                setDataStep(parsed.dataStep);
-                setUserContext(parsed.userContext);
-                setQuestions(parsed.questions);
-                setCurrentQuestionIndex(parsed.currentQuestionIndex);
-                setAnswers(parsed.answers);
-                setResult(parsed.result);
-                setScores(parsed.scores);
+
+                // Validate loaded state to prevent corrupted data
+                if (parsed.step && ['welcome', 'data-collection', 'quiz', 'results'].includes(parsed.step)) {
+                    setStep(parsed.step);
+                    setDataStep(parsed.dataStep || 0);
+                    setUserContext(parsed.userContext || { age: 25, occupation: '', gender: '', interests: '' });
+                    setCurrentQuestionIndex(parsed.currentQuestionIndex || 0);
+                    setAnswers(parsed.answers || {});
+                    setResult(parsed.result || '');
+                    setScores(parsed.scores || null);
+
+                    // Only restore questions if they're valid and complete
+                    if (parsed.questions && Array.isArray(parsed.questions) &&
+                        parsed.questions.length === baseQuestions.length &&
+                        parsed.questions.every(q => q !== null)) {
+                        console.log('📂 Restoring complete questions from localStorage');
+                        setQuestions(parsed.questions);
+
+                        // Set generation trigger to prevent regeneration
+                        const userContextStr = `${parsed.step}-${parsed.userContext?.occupation || ''}-${parsed.userContext?.age || 25}-${parsed.userContext?.gender || ''}-${parsed.userContext?.interests || ''}`;
+                        generationTriggerRef.current = userContextStr;
+                    } else {
+                        console.log('⚠️ Invalid or incomplete questions in localStorage, will regenerate');
+                        setQuestions(new Array(baseQuestions.length).fill(null));
+                    }
+                } else {
+                    console.log('⚠️ Invalid state in localStorage, starting fresh');
+                    setQuestions(new Array(baseQuestions.length).fill(null));
+                }
             } catch (e) {
                 console.error("Failed to load state", e);
+                setQuestions(new Array(baseQuestions.length).fill(null));
             }
+        } else {
+            // Initialize questions array for fresh start
+            setQuestions(new Array(baseQuestions.length).fill(null));
         }
         isLoadedRef.current = true;
     }, []);
@@ -91,7 +118,7 @@ const QuizContainer: React.FC = () => {
     useEffect(() => {
         // 5 minutes = 300,000 ms
         // For testing, we might want to use a shorter duration, but per requirements:
-        const IDLE_TIMEOUT = 1 * 60 * 1000;
+        const IDLE_TIMEOUT = 5 * 60 * 10000;
 
         let timeoutId: NodeJS.Timeout;
 
@@ -125,19 +152,30 @@ const QuizContainer: React.FC = () => {
         };
     }, []);
 
+    // Store user context and step to prevent unnecessary re-runs
+    const generationTriggerRef = useRef<string>('');
+
     // Generate questions sequentially to prevent duplication issues
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
+        // Only run when step becomes 'quiz' and userContext is ready
         if (step !== 'quiz' || !userContext.occupation) return;
+
+        // Create a unique trigger based on step and user context (not questions)
+        const currentTrigger = `${step}-${userContext.occupation}-${userContext.age}-${userContext.gender}-${userContext.interests}`;
+
+        // Prevent re-generation if we already generated for this context
+        if (generationTriggerRef.current === currentTrigger) {
+            console.log('🚫 Skipping generation - already generated for this context');
+            return;
+        }
 
         // Prevent double initialization (React Strict Mode)
         let isActive = true;
 
-        // Only start generation if questions array is initialized but empty
-        if (questions.length === 0) {
+        // Initialize questions array if needed
+        if (questions.length !== baseQuestions.length) {
             console.log('🔄 Initializing questions array');
             setQuestions(new Array(baseQuestions.length).fill(null));
-            return;
         }
 
         const generateNextConcurrent = () => {
@@ -170,8 +208,8 @@ const QuizContainer: React.FC = () => {
                     // Create a stable reference to the effect active state for this specific request
                     const wasActiveOnStart = isActive;
 
-                    generateSingleQuestion(userContext, baseQuestion)
-                        .then((generatedQuestion) => {
+                    generateSingleQuestion(userContext, baseQuestion as BaseQuestion)
+                        .then((generatedQuestion: Question) => {
                             const duration = Date.now() - startTime;
                             console.log(`✅ Question ${i + 1} generated in ${duration}ms:`, generatedQuestion.text.substring(0, 50) + '...');
 
@@ -188,7 +226,7 @@ const QuizContainer: React.FC = () => {
                                 return;
                             }
                         })
-                        .catch((error) => {
+                        .catch((error: any) => {
                             console.error(`❌ Failed to generate question ${i + 1}:`, error);
 
                             // Always set fallback question
@@ -233,6 +271,8 @@ const QuizContainer: React.FC = () => {
             const allGenerated = questionsRef.current.every(q => q !== null);
             if (allGenerated && isActive) {
                 console.log('🎉 All questions generation completed!');
+                // Mark this generation as completed to prevent re-generation
+                generationTriggerRef.current = currentTrigger;
             }
         };
 
@@ -253,7 +293,7 @@ const QuizContainer: React.FC = () => {
             currentGeneratingRef.clear();
             console.log('🧹 Cleaning up generation effect');
         };
-    }, [step, userContext, questions]);
+    }, [step, userContext.occupation, userContext.age, userContext.gender, userContext.interests]); // Remove 'questions' from deps to prevent re-runs
 
     const handleStart = () => {
         setStep('data-collection');
@@ -308,6 +348,8 @@ const QuizContainer: React.FC = () => {
 
     const handleReset = () => {
         localStorage.removeItem(STORAGE_KEY);
+        // Clear generation trigger cache
+        generationTriggerRef.current = '';
         window.location.reload();
     };
 
@@ -317,7 +359,7 @@ const QuizContainer: React.FC = () => {
             className="mt-6 flex items-center justify-center mx-auto text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 px-6 py-2.5 rounded-full transition-all duration-200 text-sm font-medium group border border-transparent hover:border-indigo-100"
         >
             <span className="mr-2 group-hover:-translate-x-1 transition-transform">🏠</span>
-            Quit & Return to Home
+            {t('quit.returnToHome')}
         </button>
     );
 
@@ -331,8 +373,8 @@ const QuizContainer: React.FC = () => {
                 return (
                     <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
-                            title="How old are you?"
-                            description="This helps us tailor the questions to your life stage."
+                            title={t('dataCollection.ageQuestion')}
+                            description={t('dataCollection.ageDescription')}
                             inputType="slider"
                             value={userContext.age}
                             onChange={(val) => handleDataUpdate('age', val)}
@@ -347,10 +389,10 @@ const QuizContainer: React.FC = () => {
                 return (
                     <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
-                            title="What do you do?"
-                            description="Your occupation or role helps us create relevant scenarios."
+                            title={t('dataCollection.occupationQuestion')}
+                            description={t('dataCollection.occupationDescription')}
                             inputType="text"
-                            placeholder="e.g. Software Engineer, Student, Artist"
+                            placeholder={t('dataCollection.occupationPlaceholder')}
                             value={userContext.occupation}
                             onChange={(val) => handleDataUpdate('occupation', val)}
                             onNext={handleDataNext}
@@ -362,16 +404,17 @@ const QuizContainer: React.FC = () => {
                 return (
                     <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
-                            title="How do you identify?"
+                            title={t('dataCollection.genderQuestion')}
+                            description={t('dataCollection.genderDescription')}
                             inputType="select"
-                            value={userContext.gender || 'Prefer not to say'}
+                            value={userContext.gender || t('dataCollection.genderOptions.preferNotToSay')}
                             onChange={(val) => handleDataUpdate('gender', val)}
                             onNext={handleDataNext}
                             options={[
-                                { label: 'Male', value: 'Male' },
-                                { label: 'Female', value: 'Female' },
-                                { label: 'Non-binary', value: 'Non-binary' },
-                                { label: 'Prefer not to say', value: 'Prefer not to say' }
+                                { label: t('dataCollection.genderOptions.male'), value: 'Male' },
+                                { label: t('dataCollection.genderOptions.female'), value: 'Female' },
+                                { label: t('dataCollection.genderOptions.nonBinary'), value: 'Non-binary' },
+                                { label: t('dataCollection.genderOptions.preferNotToSay'), value: 'Prefer not to say' }
                             ]}
                         />
                         {renderQuitButton()}
@@ -381,10 +424,10 @@ const QuizContainer: React.FC = () => {
                 return (
                     <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
                         <DataCollectionCard
-                            title="Any hobbies or interests?"
-                            description="Optional. We might use this to flavor the questions."
+                            title={t('dataCollection.hobbiesQuestion')}
+                            description={t('dataCollection.hobbiesDescription')}
                             inputType="textarea"
-                            placeholder="e.g. Hiking, Gaming, Reading Sci-Fi"
+                            placeholder={t('dataCollection.hobbiesPlaceholder')}
                             value={userContext.interests}
                             onChange={(val) => handleDataUpdate('interests', val)}
                             onNext={handleDataNext}
@@ -400,7 +443,7 @@ const QuizContainer: React.FC = () => {
     if (step === 'quiz') {
         const currentQuestion = questions[currentQuestionIndex];
 
-        if (!currentQuestion) {
+        if (!currentQuestion || !currentQuestion.id || currentQuestion.text === baseQuestions[currentQuestionIndex]?.text) {
             return (
                 <div className="min-h-screen flex items-center justify-center bg-gray-100">
                     <div className="text-center">
@@ -421,7 +464,7 @@ const QuizContainer: React.FC = () => {
                     currentQuestionIndex={currentQuestionIndex}
                     totalQuestions={baseQuestions.length}
                 />
-                
+
                 <div className="max-w-2xl lg:max-w-4xl mx-auto text-center">
                     {renderQuitButton()}
                 </div>
@@ -435,12 +478,12 @@ const QuizContainer: React.FC = () => {
                 <div className="max-w-6xl mx-auto">
                     {/* Header Section */}
                     <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-gray-800 mb-2">Your Personality Result</h1>
+                        <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('results.title')}</h1>
                         <div className="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4">
                             {result}
                         </div>
                         <p className="text-lg text-gray-600">
-                            Discover insights about your unique personality type and how it shapes your world
+                            {t('results.subtitle')}
                         </p>
                     </div>
 
@@ -451,13 +494,13 @@ const QuizContainer: React.FC = () => {
 
                         {/* Quick Actions */}
                         <div className="bg-white rounded-lg shadow-md p-6">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h3>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t('results.quickActions')}</h3>
                             <div className="space-y-3">
                                 <button
                                     onClick={handleReset}
                                     className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition font-medium"
                                 >
-                                    🔄 Retake Test
+                                    🔄 {t('results.retakeTest')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -469,23 +512,23 @@ const QuizContainer: React.FC = () => {
                                     }}
                                     className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition font-medium"
                                 >
-                                    📤 Share Results
+                                    📤 {t('results.shareResults')}
                                 </button>
                                 <button
                                     onClick={() => window.print()}
                                     className="w-full bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition font-medium"
                                 >
-                                    🖨️ Save Results
+                                    🖨️ {t('results.saveResults')}
                                 </button>
                             </div>
 
                             {/* User Context Summary */}
                             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Your Profile</h4>
+                                <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('results.yourProfile')}</h4>
                                 <div className="text-sm text-gray-600 space-y-1">
-                                    <div>🎂 Age: {userContext.age}</div>
-                                    {userContext.occupation && <div>💼 Occupation: {userContext.occupation}</div>}
-                                    {userContext.interests && <div>🎯 Interests: {userContext.interests}</div>}
+                                    <div>🎂 {t('dataCollection.age')}: {userContext.age}</div>
+                                    {userContext.occupation && <div>💼 {t('dataCollection.occupation')}: {userContext.occupation}</div>}
+                                    {userContext.interests && <div>🎯 {t('dataCollection.hobbies')}: {userContext.interests}</div>}
                                 </div>
                             </div>
                         </div>
