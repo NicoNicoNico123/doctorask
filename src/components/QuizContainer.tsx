@@ -173,7 +173,7 @@ const QuizContainer: React.FC = () => {
         let isActive = true;
 
         // Initialize questions array if needed
-        if (questions.length !== baseQuestions.length) {
+        if (questionsRef.current.length !== baseQuestions.length) {
             console.log('🔄 Initializing questions array');
             setQuestions(new Array(baseQuestions.length).fill(null));
         }
@@ -293,7 +293,7 @@ const QuizContainer: React.FC = () => {
             currentGeneratingRef.clear();
             console.log('🧹 Cleaning up generation effect');
         };
-    }, [step, userContext.occupation, userContext.age, userContext.gender, userContext.interests]); // Remove 'questions' from deps to prevent re-runs
+    }, [step, userContext]);
 
     const handleStart = () => {
         setStep('data-collection');
