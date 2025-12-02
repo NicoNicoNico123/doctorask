@@ -89,7 +89,8 @@
     "networkError": "Network error occurred. Please check your connection and try again.",
     "apiError": "Something went wrong. Please try again.",
     "validationError": "Please answer all questions Before submitting.",
-    "genericError": "An unexpected error occurred. Please try again."
+    "genericError": "An unexpected error occurred. Please try again.",
+    "tryAgain": "Try Again"
   },
   "chat": {
     "placeholder": "Ask me anything about your personality type...",

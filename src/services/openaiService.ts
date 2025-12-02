@@ -184,7 +184,19 @@ export const generateQuestions = async (userContext: UserContext, baseQuestions:
             response_format: { type: "json_object" },
         });
 
-        const content = completion.choices[0].message.content;
+        console.log('🔍 OpenAI API response (generateMultipleQuestions):', completion);
+
+        // Check if completion has choices array and it's not empty
+        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const firstChoice = completion.choices[0];
+        if (!firstChoice.message || !firstChoice.message.content) {
+            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const content = firstChoice.message.content;
         if (!content) {
             throw new Error("No content received from OpenAI");
         }
@@ -279,7 +291,19 @@ export const generateSingleQuestion = async (userContext: UserContext, baseQuest
             response_format: { type: "json_object" },
         });
 
-        const content = completion.choices[0].message.content;
+        console.log('🔍 OpenAI API response:', completion);
+
+        // Check if completion has choices array and it's not empty
+        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const firstChoice = completion.choices[0];
+        if (!firstChoice.message || !firstChoice.message.content) {
+            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const content = firstChoice.message.content;
         if (!content) {
             throw new Error("No content received from OpenAI");
         }
@@ -326,36 +350,39 @@ export const getPersonalityAnalysis = async (
     const SYSTEM_PROMPT = languageSystemPrompts[language] || languageSystemPrompts['en'];
 
     const prompt = `
-    User Information:
-    - MBTI Type: ${personalityType}
-    - Scores: ${JSON.stringify(scores)}
-    - Age: ${userContext.age}
-    - Occupation: ${userContext.occupation}
-    - Gender: ${userContext.gender}
-    - Interests: ${userContext.interests}
+        ### ROLE
+        You are an expert Senior Personality Analyst and Career Coach with deep specialization in the Myers-Briggs Type Indicator (MBTI) and Jungian cognitive functions.
 
-    Task:
-    Provide a comprehensive personality analysis for this user.
-    Include:
-    1. Overview of their personality type
-    2. Strengths and potential areas for growth
-    3. Career suggestions based on their type and interests
-    4. Relationship and communication style
-    5. Personal development recommendations
+        ### INPUT DATA
+        - **MBTI Type**: ${personalityType}
+        - **Trait Breakdown (Scores)**: ${JSON.stringify(scores)}
+        - **Demographics**: ${userContext.age} years old, ${userContext.gender}
+        - **Current Occupation**: ${userContext.occupation}
+        - **Interests/Hobbies**: ${userContext.interests}
+        - **TARGET LANGUAGE**: ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}
 
-    Output in ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}.
-    Be encouraging and positive.
+        ### INSTRUCTIONS
+        Analyze the provided data to generate a deeply personalized profile. Do not generate generic descriptions found in textbooks. Instead, synthesize the specific context:
 
-    Return as JSON with the following structure:
-    {
-        "overview": "analysis overview",
-        "strengths": ["strength1", "strength2", "strength3"],
-        "growthAreas": ["area1", "area2", "area3"],
-        "careerSuggestions": ["career1", "career2", "career3"],
-        "communicationStyle": "communication style description",
-        "developmentTips": ["tip1", "tip2", "tip3"]
-    }
-    `;
+        1. **Analyze the Scores**: Look at the specific percentage scores. If a score is near 50%, highlight their flexibility in that trait. If a score is high, highlight it as a dominant feature.
+        2. **Contextualize with Career**: Compare their MBTI natural tendencies with their current occupation (${userContext.occupation}). Are they in alignment? If not, offer advice on how to bridge the gap.
+        3. **Integrate Interests**: Use their interests (${userContext.interests}) to explain how they express their personality type in their free time.
+        4. **Tone**: Be encouraging, psychological, insightful, and positive. Avoid medical jargon; use accessible language.
+
+        ### OUTPUT FORMAT
+        You must return **ONLY** valid JSON. 
+        - Do not use markdown formatting (like \`\`\`json).
+        - Do not add intro text (like "Here is the JSON") or outro text.
+        Structure the JSON exactly as follows:
+        {
+            "overview": "A personalized summary integrating their type, specific trait strength, and current life stage.",
+            "strengths": ["An actionable strength", "An actionable strength", "An actionable strength"],
+            "growthAreas": ["A specific area for improvement", "A specific area for improvement", "A specific area for improvement"],
+            "careerSuggestions": ["Career path 1 (explain why)", "Career path 2 (explain why)", "Career path 3 (explain why)"],
+            "communicationStyle": "How they communicate best with others and how others should communicate with them.",
+            "developmentTips": ["Specific, actionable advice 1", "Specific, actionable advice 2", "Specific, actionable advice 3"]
+        }
+        `;
 
     // Fallback analysis function
     const getFallbackAnalysis = () => {
@@ -392,7 +419,19 @@ export const getPersonalityAnalysis = async (
             response_format: { type: "json_object" },
         });
 
-        const content = completion.choices[0].message.content;
+        console.log('🔍 OpenAI API response (getPersonalityAnalysis):', completion);
+
+        // Check if completion has choices array and it's not empty
+        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const firstChoice = completion.choices[0];
+        if (!firstChoice.message || !firstChoice.message.content) {
+            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const content = firstChoice.message.content;
         if (!content) {
             throw new Error("No content received from OpenAI");
         }
@@ -486,7 +525,19 @@ export const askPersonalityQuestion = async (
             model: process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo",
         });
 
-        const response = completion.choices[0].message.content;
+        console.log('🔍 OpenAI API response (generateChatResponse):', completion);
+
+        // Check if completion has choices array and it's not empty
+        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const firstChoice = completion.choices[0];
+        if (!firstChoice.message || !firstChoice.message.content) {
+            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
+        }
+
+        const response = firstChoice.message.content;
         if (!response) {
             throw new Error("No content received from OpenAI");
         }

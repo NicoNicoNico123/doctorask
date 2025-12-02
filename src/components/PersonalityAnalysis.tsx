@@ -37,12 +37,12 @@ const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({
 
         // Validate and sanitize the received data
         const sanitizedData: AnalysisData = {
-          summary: analysisData?.summary || t('results.analysis.overview', 'No summary available'),
+          summary: analysisData?.overview || t('results.analysis.overview', 'No summary available'),
           strengths: Array.isArray(analysisData?.strengths) ? analysisData.strengths : [],
-          challenges: Array.isArray(analysisData?.challenges) ? analysisData.challenges : [],
+          challenges: Array.isArray(analysisData?.growthAreas) ? analysisData.growthAreas : [],
           careerSuggestions: Array.isArray(analysisData?.careerSuggestions) ? analysisData.careerSuggestions : [],
-          relationships: analysisData?.relationships || t('results.analysis.relationships', 'No relationship data available'),
-          growthTips: Array.isArray(analysisData?.growthTips) ? analysisData.growthTips : []
+          relationships: analysisData?.communicationStyle || t('results.analysis.relationships', 'No relationship data available'),
+          growthTips: Array.isArray(analysisData?.developmentTips) ? analysisData.developmentTips : []
         };
 
         setAnalysis(sanitizedData);
