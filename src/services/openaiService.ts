@@ -1,49 +1,61 @@
 import OpenAI from 'openai';
+import i18n from '../i18n';
 
-// Initialize OpenAI client
-// Note: In a production environment, you should use a backend proxy to hide API key.
-// For this prototype, we'll expect the key to be in REACT_APP_OPENAI_API_KEY
-const openai = new OpenAI({
-    apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-    baseURL: process.env.REACT_APP_OPENAI_BASE_URL, // Optional: for custom endpoints
-    dangerouslyAllowBrowser: true // Required for client-side usage
-});
-
-// Retry configuration
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 1000; // 1 second
-const MAX_RETRY_DELAY = 10000; // 10 seconds
-
-// Utility function for exponential backoff with jitter
-const getRetryDelay = (attemptNumber: number): number => {
-    const baseDelay = INITIAL_RETRY_DELAY * Math.pow(2, attemptNumber - 1);
-    const jitter = Math.random() * 0.1 * baseDelay; // Add 10% jitter
-    return Math.min(baseDelay + jitter, MAX_RETRY_DELAY);
+// Type for OpenRouter chat message with reasoning_details
+type ORChatMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string | null;
+    reasoning_details?: unknown;
 };
 
-// Utility function to check if error is retryable
-const isRetryableError = (error: any): boolean => {
-    if (error?.code === 'insufficient_quota' || error?.code === 'invalid_api_key') {
-        return false; // Don't retry authentication/quota errors
+// OpenRouter-only configuration
+const getOpenRouterConfig = () => {
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+    const baseURL = process.env.REACT_APP_OPENAI_BASE_URL;
+    const model = process.env.REACT_APP_OPENAI_MODEL;
+
+    if (!apiKey) {
+        throw new Error('OpenRouter API key is required. Set REACT_APP_OPENROUTER_API_KEY environment variable.');
     }
 
-    if (error?.status === 429) {
-        return true; // Rate limiting - retry with backoff
-    }
-
-    if (error?.status >= 500 || error?.code === 'ECONNRESET' || error?.code === 'ETIMEDOUT') {
-        return true; // Server errors, network timeouts - retry
-    }
-
-    // Generic fetch errors or network issues
-    if (error?.name === 'FetchError' || error?.message?.includes('fetch')) {
-        return true;
-    }
-
-    return false;
+    return { apiKey, baseURL, model };
 };
 
-// Generic retry wrapper for OpenAI API calls
+// Initialize OpenRouter client
+let openRouterClient: OpenAI | null = null;
+
+// Get OpenRouter client (lazy initialization)
+const getOpenRouterClient = (): OpenAI => {
+    if (!openRouterClient) {
+        const { apiKey, baseURL } = getOpenRouterConfig();
+
+        openRouterClient = new OpenAI({
+            apiKey,
+            baseURL,
+            dangerouslyAllowBrowser: true
+        });
+
+        console.log('🔧 Initialized OpenRouter client');
+    }
+    return openRouterClient;
+};
+
+// Simple retry configuration
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 2000; // 2 seconds
+const REQUEST_TIMEOUT = 30000; // 30 seconds timeout
+
+// Utility function to add timeout to a promise
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+    return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error(`${errorMessage} (timeout after ${timeoutMs}ms)`)), timeoutMs)
+        )
+    ]);
+};
+
+// Simple retry wrapper for OpenRouter
 const withRetry = async <T>(
     apiCall: () => Promise<T>,
     fallbackValue: T,
@@ -53,26 +65,35 @@ const withRetry = async <T>(
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-            console.log(`🔄 API attempt ${attempt}/${MAX_RETRIES}`);
-            return await apiCall();
+            console.log(`🔄 OpenRouter attempt ${attempt}/${MAX_RETRIES}`);
+            const result = await withTimeout(
+                apiCall(),
+                REQUEST_TIMEOUT,
+                `OpenRouter request timed out on attempt ${attempt}`
+            );
+            console.log(`✅ OpenRouter success on attempt ${attempt}`);
+            return result;
         } catch (error) {
             lastError = error;
-            console.error(`❌ Attempt ${attempt} failed:`, error);
+            console.error(`❌ OpenRouter attempt ${attempt} failed:`, error);
 
-            if (attempt === MAX_RETRIES || !isRetryableError(error)) {
-                console.error(`💥 Giving up after ${attempt} attempts or non-retryable error`);
+            // Don't retry on authentication errors
+            if ((error as any)?.status === 401 || (error as any)?.code === 'invalid_api_key') {
                 break;
             }
 
-            const delay = getRetryDelay(attempt);
-            console.log(`⏳ Retrying in ${Math.round(delay)}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            // If this is not the last attempt, wait before retrying
+            if (attempt < MAX_RETRIES) {
+                console.log(`⏳ Retrying in ${RETRY_DELAY}ms...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            }
         }
     }
 
-    console.error(`🚨 ${errorMessage}:`, lastError);
+    console.error(`🚨 OpenRouter failed after ${MAX_RETRIES} attempts. ${errorMessage}:`, lastError);
     return fallbackValue;
 };
+
 
 export interface UserContext {
     age: number;
@@ -110,35 +131,18 @@ export const getLanguageWithCache = (cachedLanguage?: string): string => {
 
 export const generateQuestions = async (userContext: UserContext, baseQuestions: any[]): Promise<Question[]> => {
     const language = getLanguageForPrompt();
+    const { model } = getOpenRouterConfig();
+    const client = getOpenRouterClient();
 
-    console.log('🔍 generateQuestions called with:', {
+    console.log('🔍 generateQuestions called with OpenRouter:', {
         userContext,
-        hasApiKey: !!process.env.REACT_APP_OPENAI_API_KEY,
+        model,
         baseQuestionCount: baseQuestions.length,
         language: language
     });
 
-    // Only process the questions passed in baseQuestions (which should be a batch)
-
-    // Language-specific system prompts
-    const languageSystemPrompts: { [key: string]: string } = {
-        'en': `
-            You are an expert MBTI personality psychologist. Your task is to rewrite standard MBTI questions to be highly personalized based on the user's background.
-            The user will provide their Age, Occupation, Gender, and Interests.
-            Output questions in English.
-            Make scenarios relatable to their specific situation while maintaining core psychological dimensions.
-            Keep language conversational and encouraging.
-        `,
-        'zh-TW': `
-            你是專業的MBTI人格心理學家。根據用戶的背景，高度個人化標準MBTI問題。
-            用戶會提供年齡、職業、性別和興趣。
-            輸出繁體中文問題。
-            與情境與他們的具體情況相關，同時維持核心心理維度不變。
-            語氣要友善、鼓勵。
-        `
-    };
-
-    const SYSTEM_PROMPT = languageSystemPrompts[language] || languageSystemPrompts['en'];
+    // Get system prompt from i18n
+    const SYSTEM_PROMPT = i18n.t('generateQuestion.systemPrompt', { lng: language, ns: 'prompts' });
 
     const prompt = `
     User Scenario:
@@ -150,10 +154,8 @@ export const generateQuestions = async (userContext: UserContext, baseQuestions:
     Task:
     Rewrite the following MBTI questions to be highly relevant to the user's specific scenario (occupation, interests, age).
     Keep the core psychological dimension of the question exactly the same, but change the scenario to fit the user's life.
-    The user will provide their Age, Occupation, Gender, and Interests.
     Output questions in ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}.
     Make scenarios relatable to their specific situation while maintaining core psychological dimensions.
-    Keep language ${language === 'zh-TW' ? 'conversational and culturally appropriate' : 'conversational and encouraging'}.
 
     Questions to rewrite:
     ${JSON.stringify(baseQuestions)}
@@ -167,46 +169,42 @@ export const generateQuestions = async (userContext: UserContext, baseQuestions:
         console.log('🔄 Using fallback: returning original questions');
         return baseQuestions.map(q => ({
             id: q.id,
-            text: q.text, // Keep original question text
+            text: q.text,
             dimension: q.dimension,
             optionA: { text: q.options[0].text, value: q.options[0].value },
             optionB: { text: q.options[1].text, value: q.options[1].value }
         }));
     };
 
-    const apiCall = async (): Promise<Question[]> => {
-        const completion = await openai.chat.completions.create({
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: prompt }
-            ],
-            model: process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo",
-            response_format: { type: "json_object" },
-        });
-
-        console.log('🔍 OpenAI API response (generateMultipleQuestions):', completion);
-
-        // Check if completion has choices array and it's not empty
-        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
-            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const firstChoice = completion.choices[0];
-        if (!firstChoice.message || !firstChoice.message.content) {
-            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const content = firstChoice.message.content;
-        if (!content) {
-            throw new Error("No content received from OpenAI");
-        }
-
-        const result = JSON.parse(content);
-        return result.questions || [];
-    };
+    // Check if model supports reasoning
+    const supportsReasoning = model?.includes(':free') || false;
 
     return withRetry(
-        apiCall,
+        async () => {
+            const params: any = {
+                model,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: prompt }
+                ],
+                response_format: { type: "json_object" },
+            };
+
+            // Add reasoning for supported models
+            if (supportsReasoning) {
+                params.reasoning = { enabled: true };
+            }
+
+            const completion = await client.chat.completions.create(params);
+            console.log('🔍 OpenRouter API response:', completion);
+
+            if (!completion.choices?.[0]?.message?.content) {
+                throw new Error("Invalid response from OpenRouter: no message content");
+            }
+
+            const result = JSON.parse(completion.choices[0].message.content);
+            return result.questions || [];
+        },
         getFallbackQuestions(),
         "Failed to generate questions after retries - showing original questions"
     );
@@ -215,105 +213,112 @@ export const generateQuestions = async (userContext: UserContext, baseQuestions:
 // Generate a single personalized question
 export const generateSingleQuestion = async (userContext: UserContext, baseQuestion: BaseQuestion): Promise<Question> => {
     const language = getLanguageForPrompt();
+    const { model } = getOpenRouterConfig();
+    const client = getOpenRouterClient();
 
-    console.log('🔍 generateSingleQuestion called with:', {
+    console.log('🔍 generateSingleQuestion called with OpenRouter:', {
         userContext,
         baseQuestionId: baseQuestion.id,
+        model,
         language: language
     });
 
-    // Language-specific system prompts
-    const languageSystemPrompts: { [key: string]: string } = {
-        'en': `
-            You are an expert MBTI personality psychologist. Your task is to rewrite a single standard MBTI question to be highly personalized based on the user's background.
-            The user will provide their Age, Occupation, Gender, and Interests.
-            Output questions in English.
-            Make scenarios relatable to their specific situation while maintaining core psychological dimensions.
-            Keep language conversational and encouraging.
-        `,
-        'zh-TW': `
-            你是專業的MBTI人格心理學家。根據用戶的背景，高度個人化單一標準MBTI問題。
-            用戶會提供年齡、職業、性別和興趣。
-            輸出繁體中文問題。
-            與情境與他們的具體情況相關，同時維持核心心理維度不變。
-            語氣要友善、鼓勵。
-        `
-    };
-
-    const SYSTEM_PROMPT = languageSystemPrompts[language] || languageSystemPrompts['en'];
+    // Get system prompt from i18n
+    const SYSTEM_PROMPT = i18n.t('generateQuestion.systemPrompt', { lng: language, ns: 'prompts' });
 
     const prompt = `
-    User Scenario:
-    - Age: ${userContext.age}
-    - Occupation: ${userContext.occupation}
-    - Gender: ${userContext.gender}
-    - Interests: ${userContext.interests}
+        You are an expert Scenario Writer who specializes in "Slice of Life" storytelling.
+        Your goal is to take a generic personality question and transform it into a **specific, relatable daily moment**.
 
-    Task:
-    Rewrite the following MBTI question to be highly relevant to the user's specific scenario (occupation, interests, age).
-    Keep the core psychological dimension of the question exactly the same, but change the scenario to fit the user's life.
-    Output questions in ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}.
-    Make scenarios relatable to their specific situation while maintaining core psychological dimensions.
-    Keep language ${language === 'zh-TW' ? 'conversational and culturally appropriate' : 'conversational and encouraging'}.
+        ### USER PROFILE
+        - **Age:** ${userContext.age}
+        - **Occupation:** ${userContext.occupation}
+        - **Gender:** ${userContext.gender}
+        - **Interests:** ${userContext.interests}
 
-    Question to rewrite:
-    ${JSON.stringify(baseQuestion)}
+        ### TARGET LANGUAGE
+        ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文) - Hong Kong/Taiwan style. Use natural colloquialisms.' : 'English - Natural, conversational.'}
 
-    Return a JSON object with the following structure:
-    {
-        "id": ${baseQuestion.id},
-        "text": "rewritten question here",
-        "dimension": "${baseQuestion.dimension}",
-        "optionA": { "text": "option A text", "value": "${baseQuestion.options[0].value}" },
-        "optionB": { "text": "option B text", "value": "${baseQuestion.options[1].value}" }
-    }
-    `;
+        ### INPUT QUESTION
+        ${JSON.stringify(baseQuestion)}
+
+        ### INSTRUCTIONS
+
+        1. **Analyze the Core Trait:** Understand exactly what psychological metric the question is measuring.
+
+        2. **Select the "Best Fit" Attribute (CRITICAL):**
+        - **Do NOT force all user details into one question.** This creates weird, unnatural scenarios.
+        - **Pick ONE path:**
+            - *Path A (Work Mode):* Use their **Occupation** if the question is about deadlines, stress, logic, or leadership.
+            - *Path B (Leisure Mode):* Use their **Interests** if the question is about social energy, creativity, or relaxation.
+            - *Path C (Life Stage):* Use their **Age** if the question is about stability, future planning, or family.
+        - **Rule:** If a profile detail makes the scene confusing, **discard it**. The scenario must make logical sense above all else.
+
+        3. **Create the Scenario:** - Write a short, specific moment from their daily life.
+        - *Example:* Instead of "Do you like art?", say "You are standing in the gallery looking at a complex abstract painting..."
+
+        4. **Rewrite the Options (Logical Consistency):**
+        - The options must be the **natural, immediate reactions** to the specific scenario you created.
+        - They must logically follow the story.
+        - *Check:* Does Option A make sense for a person in this specific situation?
+
+        ### OUTPUT FORMAT
+        Return ONLY a valid JSON object:
+        {
+            "id": ${baseQuestion.id},
+            "text": "The specific daily life scenario...",
+            "dimension": "${baseQuestion.dimension}",
+            "optionA": { 
+                "text": "Specific reaction A", 
+                "value": "${baseQuestion.options[0].value}" 
+            },
+            "optionB": { 
+                "text": "Specific reaction B", 
+                "value": "${baseQuestion.options[1].value}" 
+            }
+        }
+        `;
 
     // Fallback function that preserves the original question
     const getFallbackQuestion = (): Question => {
         console.log('🔄 Using fallback: returning original question for ID', baseQuestion.id);
         return {
             id: baseQuestion.id,
-            text: baseQuestion.text, // Keep original question text
+            text: baseQuestion.text,
             dimension: baseQuestion.dimension,
             optionA: { text: baseQuestion.options[0].text, value: baseQuestion.options[0].value },
             optionB: { text: baseQuestion.options[1].text, value: baseQuestion.options[1].value }
         };
     };
 
-    const apiCall = async (): Promise<Question> => {
-        const completion = await openai.chat.completions.create({
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: prompt }
-            ],
-            model: process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo",
-            response_format: { type: "json_object" },
-        });
-
-        console.log('🔍 OpenAI API response:', completion);
-
-        // Check if completion has choices array and it's not empty
-        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
-            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const firstChoice = completion.choices[0];
-        if (!firstChoice.message || !firstChoice.message.content) {
-            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const content = firstChoice.message.content;
-        if (!content) {
-            throw new Error("No content received from OpenAI");
-        }
-
-        const result = JSON.parse(content);
-        return result;
-    };
+    // Check if model supports reasoning
+    const supportsReasoning = model?.includes(':free') || false;
 
     return withRetry(
-        apiCall,
+        async () => {
+            const params: any = {
+                model,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: prompt }
+                ],
+                response_format: { type: "json_object" },
+            };
+
+            // Add reasoning for supported models
+            if (supportsReasoning) {
+                params.reasoning = { enabled: true };
+            }
+
+            const completion = await client.chat.completions.create(params);
+            console.log('🔍 OpenRouter API response:', completion);
+
+            if (!completion.choices?.[0]?.message?.content) {
+                throw new Error("Invalid response from OpenRouter: no message content");
+            }
+
+            return JSON.parse(completion.choices[0].message.content);
+        },
         getFallbackQuestion(),
         `Failed to generate question ${baseQuestion.id} after retries - showing original question`
     );
@@ -326,28 +331,18 @@ export const getPersonalityAnalysis = async (
     userContext: UserContext
 ): Promise<any> => {
     const language = getLanguageForPrompt();
+    const { model } = getOpenRouterConfig();
+    const client = getOpenRouterClient();
 
-    console.log('🔍 getPersonalityAnalysis called with:', {
+    console.log('🔍 getPersonalityAnalysis called with OpenRouter:', {
         personalityType,
         scores,
+        model,
         language: language
     });
 
-    // Language-specific system prompts
-    const languageSystemPrompts: { [key: string]: string } = {
-        'en': `
-            You are an expert MBTI personality psychologist providing detailed personality analysis.
-            Provide insights in English based on the user's MBTI type, scores, and background.
-            Be encouraging, positive, and provide practical advice.
-        `,
-        'zh-TW': `
-            你是專業的MBTI人格心理學家，提供詳細的人格分析。
-            根據用戶的MBTI類型、分數和背景，用繁體中文提供見解。
-            要鼓勵、正面，並提供實用建議。
-        `
-    };
-
-    const SYSTEM_PROMPT = languageSystemPrompts[language] || languageSystemPrompts['en'];
+    // Get system prompt from i18n
+    const SYSTEM_PROMPT = i18n.t('getPersonalityAnalysis.systemPrompt', { lng: language, ns: 'prompts' });
 
     const prompt = `
         ### ROLE
@@ -370,7 +365,7 @@ export const getPersonalityAnalysis = async (
         4. **Tone**: Be encouraging, psychological, insightful, and positive. Avoid medical jargon; use accessible language.
 
         ### OUTPUT FORMAT
-        You must return **ONLY** valid JSON. 
+        You must return **ONLY** valid JSON.
         - Do not use markdown formatting (like \`\`\`json).
         - Do not add intro text (like "Here is the JSON") or outro text.
         Structure the JSON exactly as follows:
@@ -409,38 +404,34 @@ export const getPersonalityAnalysis = async (
         return fallbackData[languageKey] || fallbackData['en'];
     };
 
-    const apiCall = async () => {
-        const completion = await openai.chat.completions.create({
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: prompt }
-            ],
-            model: process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo",
-            response_format: { type: "json_object" },
-        });
-
-        console.log('🔍 OpenAI API response (getPersonalityAnalysis):', completion);
-
-        // Check if completion has choices array and it's not empty
-        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
-            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const firstChoice = completion.choices[0];
-        if (!firstChoice.message || !firstChoice.message.content) {
-            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const content = firstChoice.message.content;
-        if (!content) {
-            throw new Error("No content received from OpenAI");
-        }
-
-        return JSON.parse(content);
-    };
+    // Check if model supports reasoning
+    const supportsReasoning = model?.includes(':free') || false;
 
     return withRetry(
-        apiCall,
+        async () => {
+            const params: any = {
+                model,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: prompt }
+                ],
+                response_format: { type: "json_object" },
+            };
+
+            // Add reasoning for supported models
+            if (supportsReasoning) {
+                params.reasoning = { enabled: true };
+            }
+
+            const completion = await client.chat.completions.create(params);
+            console.log('🔍 OpenRouter API response:', completion);
+
+            if (!completion.choices?.[0]?.message?.content) {
+                throw new Error("Invalid response from OpenRouter: no message content");
+            }
+
+            return JSON.parse(completion.choices[0].message.content);
+        },
         getFallbackAnalysis(),
         `Failed to generate personality analysis for ${personalityType} after retries`
     );
@@ -453,156 +444,116 @@ export const askPersonalityQuestion = async (
     scores: { [key: string]: number },
     userContext: UserContext,
     chatHistory: any[] = []
-): Promise<string> => {
+): Promise<{ content: string; reasoning_details?: unknown }> => {
     const language = getLanguageForPrompt();
+    const { model } = getOpenRouterConfig();
+    const client = getOpenRouterClient();
 
-    console.log('🔍 askPersonalityQuestion called with:', {
+    console.log('🔍 askPersonalityQuestion called with OpenRouter:', {
         question: question.substring(0, 50) + '...',
         personalityType,
+        model,
         language: language
     });
 
-    // Language-specific system prompts
-    // 1. Enhanced System Prompts (The "Soul" of the AI)
-    const languageSystemPrompts: { [key: string]: string } = {
-    'en': `
-        ### ROLE
-            You are a close, trusted friend giving advice over text. You happen to know MBTI theory deeply, but you don't treat it like a textbook. You treat it like a tool to help your friend understand themselves better.
+    // Get system prompt from i18n with interpolation
+    const SYSTEM_PROMPT = i18n.t('askPersonalityQuestion.systemPrompt', { 
+        lng: language, 
+        ns: 'prompts',
+        occupation: userContext.occupation,
+        interests: userContext.interests,
+        userContext: JSON.stringify(userContext)
+    });
 
-            ### THE "HUMAN" RULES (Strict Adherence)
-            1.  **Kill the Structure:** ABSOLUTELY NO bullet points, no numbered lists, no bold headers (like **Conclusion**). Real people don't format texts like essays.
-            2.  **No "AI" Fluff:** Never say "Here is some advice," "I hope this helps," "Let's dive in," or "It's important to remember." Just say what you mean.
-            3.  **Reaction First:** Start with a reaction to what the user said (e.g., "Oof, that sounds rough," or "Haha, totally get that").
-            4.  **Imperfect Grammar is Okay:** You can start sentences with "And" or "But." You can use sentence fragments. It makes you sound real.
-            5.  **Subtle Context:** Do not explicitly state the user's data.
-                * BAD: "Since you are an Accountant..."
-                * GOOD: "It’s kinda like when you're balancing the books at work—you need that same precision here."
+    // Build messages array preserving reasoning_details from chat history
+    const messages: ORChatMessage[] = [
+        { role: "system", content: SYSTEM_PROMPT }
+    ];
 
-            ### CONTEXT DATA
-            User Occupation: ${userContext.occupation}
-            User Interests: ${userContext.interests}
+    // Reconstruct conversation history with preserved reasoning_details
+    // chatHistory format: [{ type: 'user'|'assistant', message: string, reasoning_details?: unknown }]
+    for (const msg of chatHistory) {
+        if (msg.type === 'user') {
+            messages.push({
+                role: 'user',
+                content: msg.message
+            });
+        } else if (msg.type === 'assistant') {
+            messages.push({
+                role: 'assistant',
+                content: msg.message,
+                reasoning_details: msg.reasoning_details // Preserve reasoning_details from previous responses
+            });
+        }
+    }
 
-            ### TONE EXAMPLES
-            * **Too AI:** "To be more outgoing, you should try joining a club. This aligns with your interest in tennis."
-            * **Your Style:** "Honestly? You just need to throw yourself out there. Maybe use that tennis group you mentioned? It’s way easier to talk to people when you're holding a racket anyway."
-
-            ### GOAL
-            Answer the user's question directly, warmly, and wisely. Keep it under 3-4 sentences unless they ask for a deep dive.
-                    `,
-        'zh-TW': `
-            ### 角色設定 (ROLE)
-            你係一個識咗好耐嘅 Friend，對 MBTI 好有研究，但係講嘢好 Chill、好直白。你唔會當自己係專家說教，而係用朋友角度去「點醒」對方。
-
-            ### 「港式」風格指引 (HK STYLE RULES)
-            1.  **廣東話中文**：
-
-            2.  **語氣助詞不能少**：
-                * 句尾要用助詞黎帶出語氣：啦、囉、喎（驚訝/反諷）、㗎（理所當然）、咩（反問）、啫（輕描淡寫）。
-                * *例：* 「咁樣諗就錯晒啦。」 vs 「你估佢想㗎咩？」
-
-            3.  **拒絕機械人格式 (No Robot Format)**：
-                * **嚴禁**條列式 (Bullet points)。絕對唔好分 1, 2, 3 點。
-                * 當作你喺 WhatsApp / Signal 打字，句子要短，斷句多用空格或逗號。
-                * **唔好講客套說話**：唔好講「希望幫到你」、「根據分析」。直接講重點 (Straight to the point)。
-
-            4.  **共鳴感 (Vibe Check)**：
-                * 引用背景資料 (${userContext}) 時要夠 Local，夠貼地。
-
-                    ### 用戶背景資料 (CONTEXT DATA)
-                    - 職業：${userContext.occupation}
-                    - 興趣：${userContext.interests}
-
-                    ### 語氣範例 (TONE EXAMPLES)
-                    * **❌ 太書面/太假 (Too Formal/Fake)**：
-                        「作為一個內向的人，我建議你嘗試參加網球班。這可以發揮你的運動興趣。」
-                    * **✅ 港式風格 (Your Style)**：
-                        「你咁諗就多餘啦。既然你平時都鐘意打 Tennis，不如直接 join 個 court 順便識人仲好啦。你只要揸住塊拍，個 focus 喺個波度，自然無咁尷尬㗎嘛，係咪先？」
-                    * **✅ 另一個範例 (Another Example)**：
-                        「其實你個 Case 唔係 Logic 問題，係個 Feel 唔對路。就好似你返工趕 Deadline 咁，有時唔係要完美，係要交到貨先算。你依家太 Overthink 啦，放鬆少少當幫忙自己囉。」
-
-                    ### 目標 (GOAL)
-                    用最地道、最「巴打/絲打」嘅語氣直接答佢。唔好長篇大論，一句起兩句止 (Short and snappy)。
-                    `
-    };
-
-    const SYSTEM_PROMPT = languageSystemPrompts[language] || languageSystemPrompts['en'];
-
-    // Format chat history
-    const chatContext = chatHistory.map(msg =>
-        `${msg.type === 'user' ? 'User' : 'Assistant'}: ${msg.message}`
-    ).join('\n');
-
-    // 2. Enhanced User Prompt (The "Data" injection)
+    // Add current user question
     const prompt = `
         ### User Context (Internal Reference Only)
         *CRITICAL: This data is for your understanding only. Do NOT explicitly mention these details unless they are directly relevant to solving the user's specific problem.*
 
         - **MBTI Type**: ${personalityType}
         - **Cognitive Function Scores**: ${JSON.stringify(scores)}
-        *(Use these silently to gauge if they are looping or stressed)*
         - **Demographics**: ${userContext.age} years old, ${userContext.gender}
         - **Occupation**: ${userContext.occupation}
-        *(Reference logic: Does their job explain their stress? If yes, use it. If no, ignore it.)*
         - **Interests**: ${userContext.interests}
-        *(Reference logic: Only use as a metaphor if it makes the explanation clearer or funnier. Do not force it.)*
-
-        ### Context
-        Recent Conversation:
-        ${chatContext}
 
         ### Current Request
         User's Question: "${question}"
 
         ### Response Instructions
-        1. **Natural Validation**: Validate their feeling immediately and casually. (Stop saying "As an INFJ...". Just say "That sounds exhausting" or "I totally get that vibe.")
+        1. **Natural Validation**: Validate their feeling immediately and casually.
         2. **Subtle Insight**: Explain *why* they feel this way based on their personality functions, but keep the theory light.
         3. **Action**: Give 1-2 quick, actionable steps.
-        * *Note:* Only reference their job/age/interests if it helps the advice land better. Otherwise, just give general human advice.
 
         Respond in ${language === 'zh-TW' ? 'Hong Kong Style Cantonese (Spoken style, code-mixing, casual)' : 'English (Casual, friendly)'}.
         `;
 
+    messages.push({ role: 'user', content: prompt });
+
     // Fallback response function
-    const getFallbackResponse = (): string => {
+    const getFallbackResponse = (): { content: string; reasoning_details?: unknown } => {
         console.log('🔄 Using fallback: returning generic personality advice');
         const fallbackResponses: { [key: string]: string } = {
             'en': `I apologize, but I'm having trouble connecting right now. Based on your ${personalityType} personality type, I encourage you to embrace your natural strengths and consider how they apply to your situation. Would you like to try asking your question again?`,
             'zh-TW': `很抱歉，我現在連線有問題。根據您的 ${personalityType} 人格類型，我鼓勵您擁抱自己的天生優勢，並思考如何將它們應用到您的情況中。您想再試一次問您的問題嗎？`
         };
-        return fallbackResponses[language] || fallbackResponses['en'];
+        return {
+            content: fallbackResponses[language] || fallbackResponses['en']
+        };
     };
 
-    const apiCall = async (): Promise<string> => {
-        const completion = await openai.chat.completions.create({
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: prompt }
-            ],
-            model: process.env.REACT_APP_OPENAI_MODEL || "gpt-3.5-turbo",
-        });
-
-        console.log('🔍 OpenAI API response (generateChatResponse):', completion);
-
-        // Check if completion has choices array and it's not empty
-        if (!completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
-            throw new Error(`Invalid response from OpenAI: no choices available. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const firstChoice = completion.choices[0];
-        if (!firstChoice.message || !firstChoice.message.content) {
-            throw new Error(`Invalid response from OpenAI: no message content. Response: ${JSON.stringify(completion)}`);
-        }
-
-        const response = firstChoice.message.content;
-        if (!response) {
-            throw new Error("No content received from OpenAI");
-        }
-
-        return response;
-    };
+    // Check if model supports reasoning
+    const supportsReasoning = model?.includes(':free') || false;
 
     return withRetry(
-        apiCall,
+        async () => {
+            const params: any = {
+                model,
+                messages,
+            };
+
+            // Add reasoning for supported models
+            if (supportsReasoning) {
+                params.reasoning = { enabled: true };
+            }
+
+            const completion = await client.chat.completions.create(params);
+            console.log('🔍 OpenRouter API response:', completion);
+
+            if (!completion.choices?.[0]?.message?.content) {
+                throw new Error("Invalid response from OpenRouter: no message content");
+            }
+
+            // Extract the assistant message with reasoning_details (following sample code pattern)
+            const response = completion.choices[0].message as ORChatMessage;
+
+            // Return both content and reasoning_details so caller can preserve reasoning state
+            return {
+                content: response.content || '',
+                reasoning_details: response.reasoning_details
+            };
+        },
         getFallbackResponse(),
         `Failed to get personality chat response after retries`
     );

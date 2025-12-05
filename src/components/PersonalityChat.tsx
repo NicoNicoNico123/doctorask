@@ -7,6 +7,7 @@ interface ChatMessage {
   type: 'user' | 'assistant';
   message: string;
   timestamp: Date;
+  reasoning_details?: unknown; // Preserve reasoning_details for OpenRouter reasoning continuation
 }
 
 interface PersonalityChatProps {
@@ -66,19 +67,27 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
     setIsLoading(true);
 
     try {
+      // Prepare chat history with reasoning_details preserved
+      const chatHistory = messages.slice(-10).map(msg => ({
+        type: msg.type,
+        message: msg.message,
+        reasoning_details: msg.reasoning_details
+      }));
+
       const response = await askPersonalityQuestion(
         message.trim(),
         personalityType,
         scores,
         userContext,
-        messages.slice(-10) // Send last 10 messages for context
+        chatHistory // Send last 10 messages with reasoning_details for context
       );
 
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        message: response,
-        timestamp: new Date()
+        message: response.content,
+        timestamp: new Date(),
+        reasoning_details: response.reasoning_details // Preserve reasoning_details for next request
       };
 
       setMessages(prev => [...prev, assistantMessage]);
