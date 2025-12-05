@@ -479,6 +479,23 @@ const QuizContainer: React.FC = () => {
                     {/* Header Section */}
                     <div className="text-center mb-8">
                         <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('results.title')}</h1>
+                        {result && (
+                            <div className="mb-4 flex justify-center">
+                                <img 
+                                    src={`${process.env.PUBLIC_URL || ''}/character/${result}.png`} 
+                                    alt={`${result} personality type`}
+                                    className="max-w-xs w-full h-auto rounded-lg shadow-lg"
+                                    onError={(e) => {
+                                        const target = e.currentTarget;
+                                        console.error('Failed to load image:', target.src);
+                                        // Try alternative path if first attempt fails
+                                        if (!target.src.includes('/character/')) {
+                                            target.src = `/character/${result}.png`;
+                                        }
+                                    }}
+                                />
+                            </div>
+                        )}
                         <div className="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4">
                             {result}
                         </div>
