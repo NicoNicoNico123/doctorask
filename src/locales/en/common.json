@@ -16,10 +16,10 @@
     "occupationPlaceholder": "e.g. Software Engineer, Student, Artist",
     "genderQuestion": "How do you identify?",
     "genderDescription": "This helps us consider different social perspectives.",
-    "hobbies": "Hobbies",
-    "hobbiesQuestion": "Any hobbies or interests?",
-    "hobbiesDescription": "Your interests help us create engaging examples.",
-    "hobbiesPlaceholder": "e.g. Hiking, Gaming, Reading Sci-Fi",
+    "hobbies": "Hobbies & Interests",
+    "hobbiesQuestion": "What are your hobbies and interests?",
+    "hobbiesDescription": "Add up to 5 interests as tags to help us create personalized examples for you.",
+    "hobbiesPlaceholder": "e.g. Hiking, Gaming, Reading, Photography, Cooking",
     "nextButton": "Next",
     "genderOptions": {
       "male": "Male",
@@ -40,6 +40,21 @@
   },
   "quit": {
     "returnToHome": "Quit & Return to Home"
+  },
+  "nameScreen": {
+    "title": "What's your name?",
+    "description": "Let us know your name so we can personalize your results.",
+    "placeholder": "Enter your name",
+    "nextButton": "Next",
+    "completeButton": "Complete & Get Results",
+    "finalStepHint": "Almost done! Your personalized MBTI results are just one step away."
+  },
+  "tagInput": {
+    "noTagsPlaceholder": "Add tags using Enter or comma",
+    "inputPlaceholder": "Type and press Enter or comma to add tag",
+    "atLimitPlaceholder": "Maximum tags reached",
+    "removeTag": "Remove tag",
+    "instructions": "Type your interests and press Enter or comma to add them as tags. Maximum {{maxTags}} tags."
   },
   "results": {
     "title": "Your Personality Type",
@@ -104,7 +119,7 @@
       "How do I handle relationships?",
       "What should I work on improving?"
     ],
-    "welcomeMessage": "Hi! I'm here to answer your questions about your {{personalityType}} personality type. Feel free to ask me anything about your strengths, relationships, career paths, or personal growth!",
+    "welcomeMessage": "Hi {{name}}! I'm here to answer your questions about your {{personalityType}} personality type. Feel free to ask me anything about your strengths, relationships, career paths, or personal growth!",
     "errorMessage": "I'm sorry, I'm having trouble answering that question right now. Please try again or ask me something else about your personality type."
   },
   "resultChart": {

@@ -41,9 +41,9 @@ const getOpenRouterClient = (): OpenAI => {
 };
 
 // Simple retry configuration
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 5;
 const RETRY_DELAY = 2000; // 2 seconds
-const REQUEST_TIMEOUT = 30000; // 30 seconds timeout
+const REQUEST_TIMEOUT = 50000; // 50 seconds timeout
 
 // Utility function to add timeout to a promise
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
@@ -99,7 +99,8 @@ export interface UserContext {
     age: number;
     occupation: string;
     gender: string;
-    interests: string;
+    interests: string[]; // Changed from string to string[] for hashtags
+    name: string; // Added name field
 }
 
 export interface Question {

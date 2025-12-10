@@ -16,11 +16,10 @@
     "occupationPlaceholder": "例如：軟體工程師、學生、藝術家",
     "genderQuestion": "你的性別是？",
     "genderDescription": "這能幫助我們考慮不同的社會觀點。",
-    "hobbiesQuestion": "有什麼興趣愛好嗎？",
+    "hobbiesQuestion": "你有哪些興趣愛好？",
     "hobbies": "興趣愛好",
-    "hobbiesDescription": "你的興趣能幫助我們創造有趣的例子。",
-    "occupationPlaceholder": "例如：軟體工程師、學生、藝術家",
-    "hobbiesPlaceholder": "例如：健行、遊戲、科幻閱讀",
+    "hobbiesDescription": "新增最多5個興趣標籤，幫助我們為你創造個人化的例子。",
+    "hobbiesPlaceholder": "例如：健行、遊戲、閱讀、攝影、烹飪",
     "nextButton": "下一步",
     "genderOptions": {
       "male": "男性",
@@ -41,6 +40,21 @@
   },
   "quit": {
     "returnToHome": "離開並返回首頁"
+  },
+  "nameScreen": {
+    "title": "你叫什麼名字？",
+    "description": "讓我們知道你的名字，以便為你個人化結果。",
+    "placeholder": "輸入你的名字",
+    "nextButton": "下一步",
+    "completeButton": "完成並取得結果",
+    "finalStepHint": "快完成了！你的個人化 MBTI 結果僅差一步就能獲得。"
+  },
+  "tagInput": {
+    "noTagsPlaceholder": "使用 Enter 或逗號新增標籤",
+    "inputPlaceholder": "輸入後按 Enter 或逗號新增標籤",
+    "atLimitPlaceholder": "已達標籤數量上限",
+    "removeTag": "移除標籤",
+    "instructions": "輸入你的興趣，按 Enter 或逗號將它們新增為標籤。最多 {{maxTags}} 個標籤。"
   },
   "results": {
     "title": "你的人格類型",
@@ -114,7 +128,7 @@
       "我如何處理人際關係？",
       "我應該改進什麼？"
     ],
-    "welcomeMessage": "嗨！我在這裡回答你關於 {{personalityType}} 人格類型的問題。隨時問我關於你的優點、人際關係、職業道路或個人成長的任何事！",
+    "welcomeMessage": "嗨 {{name}}！我在這裡回答你關於 {{personalityType}} 人格類型的問題。隨時問我關於你的優點、人際關係、職業道路或個人成長的任何事！",
     "errorMessage": "抱歉，我現在無法回答那個問題。請再試一次或問我關於你人格類型的其他問題。"
   },
   "octagonChart": {

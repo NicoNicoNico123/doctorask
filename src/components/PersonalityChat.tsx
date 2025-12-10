@@ -26,7 +26,10 @@ const PersonalityChat: React.FC<PersonalityChatProps> = ({
     {
       id: '1',
       type: 'assistant',
-      message: t('chat.welcomeMessage', { personalityType }),
+      message: t('chat.welcomeMessage', {
+        name: userContext.name || 'there',
+        personalityType
+      }),
       timestamp: new Date()
     }
   ]);

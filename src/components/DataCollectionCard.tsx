@@ -1,10 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import TagInput from './TagInput';
 
 interface DataCollectionCardProps {
     title: string;
     description?: string;
-    inputType: 'slider' | 'text' | 'select' | 'textarea';
+    inputType: 'slider' | 'text' | 'select' | 'textarea' | 'tags';
     value: any;
     onChange: (value: any) => void;
     onNext: () => void;
@@ -30,7 +31,9 @@ const DataCollectionCard: React.FC<DataCollectionCardProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (value) onNext();
+        if (inputType === 'tags' ? (value && value.length > 0) : value) {
+            onNext();
+        }
     };
 
     return (
@@ -80,6 +83,15 @@ const DataCollectionCard: React.FC<DataCollectionCardProps> = ({
                     />
                 )}
 
+                {inputType === 'tags' && (
+                    <TagInput
+                        tags={value || []}
+                        onChange={onChange}
+                        maxTags={5}
+                        placeholder={placeholder}
+                    />
+                )}
+
                 {inputType === 'select' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {options?.map((opt) => (
@@ -105,7 +117,8 @@ const DataCollectionCard: React.FC<DataCollectionCardProps> = ({
                 {inputType !== 'select' && (
                     <button
                         type="submit"
-                        className="w-full bg-indigo-600 text-white py-4 px-6 rounded-xl hover:bg-indigo-700 transition duration-200 font-bold text-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                        className="w-full bg-indigo-600 text-white py-4 px-6 rounded-xl hover:bg-indigo-700 transition duration-200 font-bold text-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
+                        disabled={inputType === 'tags' && (!value || value.length === 0)}
                     >
                         {t('dataCollection.nextButton')}
                     </button>

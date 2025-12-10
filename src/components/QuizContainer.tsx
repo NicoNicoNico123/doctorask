@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import WelcomeScreen from './WelcomeScreen';
 import DataCollectionCard from './DataCollectionCard';
 import QuestionCard from './QuestionCard';
+import NameScreen from './NameScreen';
 import OctagonChart from './OctagonChart';
 import PersonalityAnalysis from './PersonalityAnalysis';
 import PersonalityChat from './PersonalityChat';
@@ -12,7 +13,7 @@ import { generateSingleQuestion, UserContext, Question, BaseQuestion } from '../
 const STORAGE_KEY = 'mbti_quiz_state';
 
 interface QuizState {
-    step: 'welcome' | 'data-collection' | 'quiz' | 'results';
+    step: 'welcome' | 'data-collection' | 'quiz' | 'name' | 'results';
     dataStep: number;
     userContext: UserContext;
     questions: (Question | null)[];
@@ -24,14 +25,15 @@ interface QuizState {
 
 const QuizContainer: React.FC = () => {
     const { t } = useTranslation();
-    const [step, setStep] = useState<'welcome' | 'data-collection' | 'quiz' | 'results'>('welcome');
+    const [step, setStep] = useState<'welcome' | 'data-collection' | 'quiz' | 'name' | 'results'>('welcome');
     const [dataStep, setDataStep] = useState(0);
 
     const [userContext, setUserContext] = useState<UserContext>({
         age: 25,
         occupation: '',
         gender: '',
-        interests: ''
+        interests: [],
+        name: ''
     });
 
     const [questions, setQuestions] = useState<(Question | null)[]>(new Array(baseQuestions.length).fill(null));
@@ -59,10 +61,20 @@ const QuizContainer: React.FC = () => {
                 const parsed: QuizState = JSON.parse(savedState);
 
                 // Validate loaded state to prevent corrupted data
-                if (parsed.step && ['welcome', 'data-collection', 'quiz', 'results'].includes(parsed.step)) {
+                if (parsed.step && ['welcome', 'data-collection', 'quiz', 'name', 'results'].includes(parsed.step)) {
                     setStep(parsed.step);
                     setDataStep(parsed.dataStep || 0);
-                    setUserContext(parsed.userContext || { age: 25, occupation: '', gender: '', interests: '' });
+
+                    // Handle migration for old state format
+                    let userContext = parsed.userContext || { age: 25, occupation: '', gender: '', interests: [], name: '' };
+                    if (typeof userContext.interests === 'string') {
+                        // Convert old string interests to array
+                        userContext.interests = userContext.interests ? [userContext.interests] : [];
+                    }
+                    if (!userContext.name) {
+                        userContext.name = '';
+                    }
+                    setUserContext(userContext);
                     setCurrentQuestionIndex(parsed.currentQuestionIndex || 0);
                     setAnswers(parsed.answers || {});
                     setResult(parsed.result || '');
@@ -321,7 +333,8 @@ const QuizContainer: React.FC = () => {
         if (currentQuestionIndex < baseQuestions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
-            calculateResult();
+            // Go to name screen after completing all MBTI questions
+            setStep('name');
         }
     };
 
@@ -426,7 +439,7 @@ const QuizContainer: React.FC = () => {
                         <DataCollectionCard
                             title={t('dataCollection.hobbiesQuestion')}
                             description={t('dataCollection.hobbiesDescription')}
-                            inputType="textarea"
+                            inputType="tags"
                             placeholder={t('dataCollection.hobbiesPlaceholder')}
                             value={userContext.interests}
                             onChange={(val) => handleDataUpdate('interests', val)}
@@ -472,6 +485,20 @@ const QuizContainer: React.FC = () => {
         );
     }
 
+  if (step === 'name') {
+    return (
+      <div className="min-h-screen bg-gray-100 py-12 px-4 flex flex-col justify-center">
+        <NameScreen
+          userName={userContext.name}
+          onChange={(name) => setUserContext(prev => ({ ...prev, name }))}
+          onNext={calculateResult}
+          isFinalStep={true}
+        />
+        {renderQuitButton()}
+      </div>
+    );
+  }
+
     if (step === 'results') {
         return (
             <div className="min-h-screen bg-gray-100 px-4 py-8">
@@ -479,6 +506,9 @@ const QuizContainer: React.FC = () => {
                     {/* Header Section */}
                     <div className="text-center mb-8">
                         <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('results.title')}</h1>
+                        {userContext.name && (
+                            <p className="text-xl text-gray-600 mb-2">Hello, {userContext.name}!</p>
+                        )}
                         {result && (
                             <div className="mb-4 flex justify-center">
                                 <img 
@@ -542,10 +572,24 @@ const QuizContainer: React.FC = () => {
                             {/* User Context Summary */}
                             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                                 <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('results.yourProfile')}</h4>
-                                <div className="text-sm text-gray-600 space-y-1">
+                                <div className="text-sm text-gray-600 space-y-2">
                                     <div>🎂 {t('dataCollection.age')}: {userContext.age}</div>
                                     {userContext.occupation && <div>💼 {t('dataCollection.occupation')}: {userContext.occupation}</div>}
-                                    {userContext.interests && <div>🎯 {t('dataCollection.hobbies')}: {userContext.interests}</div>}
+                                    {userContext.interests && userContext.interests.length > 0 && (
+                                        <div>
+                                            <span className="font-medium">🎯 {t('dataCollection.hobbies')}: </span>
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {userContext.interests.map((interest, index) => (
+                                                    <span
+                                                        key={index}
+                                                        className="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200"
+                                                    >
+                                                        #{interest}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
