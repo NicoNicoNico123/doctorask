@@ -107,6 +107,192 @@
     "english": "English",
     "chinese": "中文 (繁體)"
   },
+  "medicalWelcome": {
+    "title": "AI 健康助理",
+    "description": "透過 AI 獲得個人化健康洞察。描述你的症狀，就能得到關於可能病情和下一步行動的智能指引。",
+    "startButton": "開始評估",
+    "disclaimer": "此 AI 助理僅供資訊參考，不能取代專業醫療護理。如有醫療疑慮，務必諮詢醫療專業人員。",
+    "emergencyWarning": "如果你正處於醫療緊急情況，請立即撥打緊急服務電話。"
+  },
+  "symptomCollection": {
+    "title": "告訴我們你的健康狀況",
+    "subtitle": "這些資訊能幫助我們的 AI 提供更準確的評估。",
+    "nextButton": "下一步",
+    "primarySymptom": {
+      "title": "你的主要健康問題是什麼？",
+      "description": "請詳細描述你的主要症狀。",
+      "placeholder": "例如：嚴重頭痛、胃痛、呼吸困難"
+    },
+    "age": {
+      "title": "你幾歲？",
+      "description": "年齡能幫助我們了解你的健康背景和風險因素。"
+    },
+    "gender": {
+      "title": "你的性別是？",
+      "description": "這能幫助我們考慮性別特定的健康因素。",
+      "options": {
+        "male": "男性",
+        "female": "女性",
+        "other": "其他",
+        "preferNotToSay": "不願回答"
+      }
+    },
+    "additionalSymptoms": {
+      "title": "你是否有其他症狀？",
+      "description": "請列出你正在經歷的任何其他症狀。",
+      "placeholder": "例如：發燒、噁心、疲勞、頭暈"
+    },
+    "medications": {
+      "title": "你目前正在服用什麼藥物？",
+      "description": "這能幫助我們考慮潛在的藥物相互作用或副作用。",
+      "placeholder": "例如：阿斯匹靈、降血壓藥、維他命"
+    },
+    "allergies": {
+      "title": "你是否有已知的過敏？",
+      "description": "請包括藥物過敏和其他已知過敏。",
+      "placeholder": "例如：盤尼西林、花生、花粉"
+    },
+    "medicalHistory": {
+      "title": "你有相關的病史嗎？",
+      "description": "請包括慢性疾病、過往手術或相關健康史。",
+      "placeholder": "例如：糖尿病、高血壓、近期手術"
+    },
+    "duration": {
+      "placeholder": "選擇持續時間",
+      "lessThanHour": "少於一小時",
+      "fewHours": "幾小時",
+      "oneDay": "約一天",
+      "fewDays": "幾天",
+      "oneWeek": "約一週",
+      "fewWeeks": "幾週",
+      "oneMonth": "約一個月",
+      "fewMonths": "幾個月",
+      "moreThanSixMonths": "超過六個月"
+    },
+    "severity": {
+      "noPain": "無痛",
+      "worstPain": "最嚴重",
+      "mild": "輕微",
+      "moderate": "中等",
+      "severe": "嚴重",
+      "verySevere": "非常嚴重"
+    }
+  },
+  "dynamicQuestion": {
+    "whyThisQuestion": "為什麼要問這個問題？",
+    "next": "下一步",
+    "complete": "完成評估",
+    "yes": "是",
+    "no": "否",
+    "typeYourAnswer": "在這裡輸入你的答案...",
+    "singleQuestion": "單一問題",
+    "oneThingAtATime": "我們一次只問一個問題，以獲得更準確的答案。",
+    "questionCount": "已提問數量：{{count}}",
+    "leadingPossibilities": "主要可能性",
+    "scale": {
+      "pleaseSelect": "請選擇程度",
+      "mild": "輕微",
+      "moderate": "中等",
+      "severe": "嚴重",
+      "verySevere": "非常嚴重",
+      "noPain": "無痛",
+      "minimal": "最輕微",
+      "maximum": "最嚴重"
+    },
+    "type": {
+      "severity": "嚴重程度",
+      "duration": "持續時間",
+      "location": "位置",
+      "frequency": "頻率",
+      "triggers": "誘發因素",
+      "associated": "相關症狀",
+      "medicalHistory": "病史",
+      "lifestyle": "生活習慣",
+      "general": "一般"
+    }
+  },
+  "diagnosisResults": {
+    "title": "{{name}}，你好，這是你的健康洞察",
+    "subtitle": "基於你的症狀：{{symptom}}",
+    "disclaimer": {
+      "title": "重要醫療免責聲明",
+      "content": "此 AI 評估僅供資訊參考，不能取代專業醫療診斷、治療或建議。如有任何醫療疑慮，務必諮詢合格的醫療保健提供者。"
+    },
+    "emergency": {
+      "title": "⚠️ 緊急警告",
+      "callToAction": "如果你正經歷任何這些症狀，請立即尋求醫療協助或撥打緊急服務電話。"
+    },
+    "possibleConditions": "可能的病情",
+    "probability": "可能性",
+    "confidence": {
+      "label": "信心程度",
+      "high": "高",
+      "medium": "中等",
+      "low": "低",
+      "unknown": "未知"
+    },
+    "urgency": {
+      "emergency": "緊急",
+      "urgent": "急診",
+      "routine": "常規",
+      "self_care": "自我護理"
+    },
+    "reasoning": "為什麼是這個診斷？",
+    "askAboutThis": "詢問關於此病情的問題",
+    "nextSteps": "建議的下一步",
+    "selfCare": "自我護理建議",
+    "whenToSeekCare": "何時尋求專業醫療協助",
+    "askQuestions": "提出後續問題",
+    "hideChat": "隱藏聊天",
+    "noDiagnoses": "目前沒有可用的診斷結果。請重試或諮詢醫療專業人員。"
+  },
+  "medicalChat": {
+    "title": "醫療問答",
+    "subtitle": "詢問關於你的評估結果",
+    "focusedOn": "目前討論",
+    "welcome": {
+      "title": "詢問關於你的健康問題",
+      "subtitle": "我在這裡幫助你回答關於症狀評估和可能病情的問題。"
+    },
+    "suggestedQuestions": {
+      "title": "建議問題",
+      "whatDoesThisMean": "這個診斷意味著什麼？",
+      "howSerious": "這個病情有多嚴重？",
+      "treatmentOptions": "有哪些治療選擇？",
+      "prevention": "未來如何預防這個問題？",
+      "whenToWorry": "什麼時候需要擔心？",
+      "lifestyleChanges": "什麼生活習慣改變會有幫助？"
+    },
+    "error": {
+      "message": "我現在連線有問題。請重試或諮詢醫療專業人員。"
+    },
+    "typing": "AI 正在輸入...",
+    "input": {
+      "placeholder": "詢問關於你的症狀或診斷..."
+    },
+    "send": "傳送",
+    "disclaimer": "此聊天僅供資訊參考，不能取代專業醫療建議。"
+  },
+  "diagnosisContainer": {
+    "loading": "正在分析你的症狀...",
+    "analyzing": "正在處理健康資訊...",
+    "finalizing": "正在準備你的結果...",
+    "patient": "病患",
+    "error": {
+      "title": "出了點問題",
+      "generatingQuestions": "無法生成後續問題",
+      "checkingQuestions": "無法檢查是否需要更多問題",
+      "performingDiagnosis": "無法完成診斷",
+      "restart": "重新開始"
+    },
+    "fallback": {
+      "condition": "需要醫療評估",
+      "reasoning": "無法完成 AI 分析。請諮詢醫療專業人員。",
+      "nextStep": "預約醫療保健提供者",
+      "selfCare": "休息並監測症狀",
+      "whenToSeekCare": "如果症狀惡化或持續"
+    }
+  },
   "loading": {
     "analyzing": "正在分析你的回答...",
     "generating": "正在生成個人化見解...",

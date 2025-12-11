@@ -1,25 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface NameScreenProps {
-    userName: string;
-    onChange: (name: string) => void;
-    onNext: () => void;
+    userName?: string;
+    onChange?: (name: string) => void;
+    onNext?: (name: string) => void;
+    onBack?: () => void;
     isFinalStep?: boolean;
 }
 
 const NameScreen: React.FC<NameScreenProps> = ({
-    userName,
+    userName = '',
     onChange,
     onNext,
+    onBack,
     isFinalStep = false
 }) => {
     const { t } = useTranslation();
+    const [name, setName] = useState(userName);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (userName.trim()) {
-            onNext();
+        if (name.trim() && onNext) {
+            onNext(name.trim());
         }
     };
 
@@ -36,8 +39,8 @@ const NameScreen: React.FC<NameScreenProps> = ({
                 <div>
                     <input
                         type="text"
-                        value={userName}
-                        onChange={(e) => onChange(e.target.value)}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder={t('nameScreen.placeholder', 'Enter your name')}
                         className="w-full px-6 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-lg lg:text-xl"
                         autoFocus
@@ -48,7 +51,7 @@ const NameScreen: React.FC<NameScreenProps> = ({
                 <button
                     type="submit"
                     className="w-full bg-indigo-600 text-white py-4 px-6 rounded-xl hover:bg-indigo-700 transition duration-200 font-bold text-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none"
-                    disabled={!userName.trim()}
+                    disabled={!name.trim()}
                 >
                     {isFinalStep
                         ? t('nameScreen.completeButton', 'Complete & Get Results')

@@ -98,6 +98,192 @@
     "english": "English",
     "chinese": "中文 (繁體)"
   },
+  "medicalWelcome": {
+    "title": "AI Health Assistant",
+    "description": "Get personalized health insights powered by AI. Describe your symptoms and receive intelligent guidance on possible conditions and next steps.",
+    "startButton": "Start Assessment",
+    "disclaimer": "This AI assistant is for informational purposes only and is not a substitute for professional medical care. Always consult healthcare professionals for medical concerns.",
+    "emergencyWarning": "If you're experiencing a medical emergency, call emergency services immediately."
+  },
+  "symptomCollection": {
+    "title": "Tell us about your health",
+    "subtitle": "This information helps our AI provide more accurate assessments.",
+    "nextButton": "Next",
+    "primarySymptom": {
+      "title": "What's your main health concern?",
+      "description": "Please describe your primary symptom in detail.",
+      "placeholder": "e.g., severe headache, stomach pain, difficulty breathing"
+    },
+    "age": {
+      "title": "How old are you?",
+      "description": "Age helps us understand your health context and risk factors."
+    },
+    "gender": {
+      "title": "What's your gender?",
+      "description": "This helps us consider gender-specific health factors.",
+      "options": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other",
+        "preferNotToSay": "Prefer not to say"
+      }
+    },
+    "additionalSymptoms": {
+      "title": "Are you experiencing any other symptoms?",
+      "description": "Add any additional symptoms you're experiencing.",
+      "placeholder": "e.g., fever, nausea, fatigue, dizziness"
+    },
+    "medications": {
+      "title": "What medications are you currently taking?",
+      "description": "This helps us consider potential medication interactions or side effects.",
+      "placeholder": "e.g., aspirin, blood pressure medication, vitamins"
+    },
+    "allergies": {
+      "title": "Do you have any known allergies?",
+      "description": "Please include medication allergies and other known allergies.",
+      "placeholder": "e.g., penicillin, peanuts, pollen"
+    },
+    "medicalHistory": {
+      "title": "Do you have any relevant medical history?",
+      "description": "Include any chronic conditions, previous surgeries, or relevant health history.",
+      "placeholder": "e.g., diabetes, high blood pressure, recent surgery"
+    },
+    "duration": {
+      "placeholder": "Select duration",
+      "lessThanHour": "Less than an hour",
+      "fewHours": "A few hours",
+      "oneDay": "About one day",
+      "fewDays": "A few days",
+      "oneWeek": "About one week",
+      "fewWeeks": "A few weeks",
+      "oneMonth": "About one month",
+      "fewMonths": "A few months",
+      "moreThanSixMonths": "More than six months"
+    },
+    "severity": {
+      "noPain": "No pain",
+      "worstPain": "Worst possible",
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe",
+      "verySevere": "Very severe"
+    }
+  },
+  "dynamicQuestion": {
+    "whyThisQuestion": "Why am I being asked this?",
+    "next": "Next",
+    "complete": "Complete Assessment",
+    "yes": "Yes",
+    "no": "No",
+    "typeYourAnswer": "Type your answer here...",
+    "singleQuestion": "Single Question",
+    "oneThingAtATime": "We ask one question at a time for more accurate answers.",
+    "questionCount": "Questions asked: {{count}}",
+    "leadingPossibilities": "Leading Possibilities",
+    "scale": {
+      "pleaseSelect": "Please select a level",
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe",
+      "verySevere": "Very severe",
+      "noPain": "No pain",
+      "minimal": "Minimal",
+      "maximum": "Maximum"
+    },
+    "type": {
+      "severity": "Severity",
+      "duration": "Duration",
+      "location": "Location",
+      "frequency": "Frequency",
+      "triggers": "Triggers",
+      "associated": "Associated Symptoms",
+      "medicalHistory": "Medical History",
+      "lifestyle": "Lifestyle",
+      "general": "General"
+    }
+  },
+  "diagnosisResults": {
+    "title": "Hello {{name}}, here are your health insights",
+    "subtitle": "Based on your symptom: {{symptom}}",
+    "disclaimer": {
+      "title": "Important Medical Disclaimer",
+      "content": "This AI assessment is for informational purposes only and is not a substitute for professional medical diagnosis, treatment, or advice. Always consult qualified healthcare providers for any medical concerns."
+    },
+    "emergency": {
+      "title": "⚠️ Emergency Warning",
+      "callToAction": "If you're experiencing any of these symptoms, seek immediate medical attention or call emergency services."
+    },
+    "possibleConditions": "Possible Conditions",
+    "probability": "Probability",
+    "confidence": {
+      "label": "Confidence",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "unknown": "Unknown"
+    },
+    "urgency": {
+      "emergency": "Emergency",
+      "urgent": "Urgent",
+      "routine": "Routine",
+      "self_care": "Self Care"
+    },
+    "reasoning": "Why this diagnosis?",
+    "askAboutThis": "Ask about this condition",
+    "nextSteps": "Recommended Next Steps",
+    "selfCare": "Self-Care Recommendations",
+    "whenToSeekCare": "When to Seek Professional Care",
+    "askQuestions": "Ask Follow-up Questions",
+    "hideChat": "Hide Chat",
+    "noDiagnoses": "No diagnoses available at this time. Please try again or consult a healthcare professional."
+  },
+  "medicalChat": {
+    "title": "Medical Q&A",
+    "subtitle": "Ask questions about your assessment results",
+    "focusedOn": "Currently discussing",
+    "welcome": {
+      "title": "Ask about your health",
+      "subtitle": "I'm here to help answer questions about your symptom assessment and possible conditions."
+    },
+    "suggestedQuestions": {
+      "title": "Suggested questions",
+      "whatDoesThisMean": "What does this diagnosis mean?",
+      "howSerious": "How serious is this condition?",
+      "treatmentOptions": "What are the treatment options?",
+      "prevention": "How can I prevent this in the future?",
+      "whenToWorry": "When should I be worried?",
+      "lifestyleChanges": "What lifestyle changes would help?"
+    },
+    "error": {
+      "message": "I'm having trouble connecting right now. Please try again or consult a healthcare professional."
+    },
+    "typing": "AI is typing...",
+    "input": {
+      "placeholder": "Ask about your symptoms or diagnosis..."
+    },
+    "send": "Send",
+    "disclaimer": "This chat is for informational purposes only and not a substitute for professional medical advice."
+  },
+  "diagnosisContainer": {
+    "loading": "Analyzing your symptoms...",
+    "analyzing": "Processing health information...",
+    "finalizing": "Preparing your results...",
+    "patient": "Patient",
+    "error": {
+      "title": "Something went wrong",
+      "generatingQuestions": "Unable to generate follow-up questions",
+      "checkingQuestions": "Unable to check for additional questions",
+      "performingDiagnosis": "Unable to complete diagnosis",
+      "restart": "Start Over"
+    },
+    "fallback": {
+      "condition": "Requires medical evaluation",
+      "reasoning": "Unable to complete AI analysis. Please consult a healthcare professional.",
+      "nextStep": "Schedule an appointment with a healthcare provider",
+      "selfCare": "Rest and monitor symptoms",
+      "whenToSeekCare": "If symptoms worsen or persist"
+    }
+  },
   "loading": {
     "analyzing": "Analyzing your responses...",
     "generating": "Generating personalized insights...",
