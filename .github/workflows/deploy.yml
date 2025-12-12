@@ -34,8 +34,8 @@ jobs:
         run: npm run build
         env:
           REACT_APP_OPENAI_API_KEY: ${{ secrets.REACT_APP_OPENAI_API_KEY }}
-          REACT_APP_OPENAI_BASE_URL: ${{ vars.REACT_APP_OPENAI_BASE_URL }}
-          REACT_APP_OPENAI_MODEL: ${{ vars.REACT_APP_OPENAI_MODEL }}
+          REACT_APP_OPENAI_BASE_URL: ${{ secrets.REACT_APP_OPENAI_BASE_URL }}
+          REACT_APP_OPENAI_MODEL: ${{ secrets.REACT_APP_OPENAI_MODEL }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
