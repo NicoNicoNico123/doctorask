@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import WelcomeScreen from './WelcomeScreen';
 import SymptomCollectionCard from './SymptomCollectionCard';
 import DynamicQuestionCard from './DynamicQuestionCard';
-import NameScreen from './NameScreen';
 import DiagnosisResults from './DiagnosisResults';
 import {
     PatientContext,
@@ -20,7 +19,7 @@ import { PatientProfile, SymptomDetail, BodySystem, MedicalQuestion } from '../t
 const STORAGE_KEY = 'medical_diagnosis_state';
 
 interface DiagnosisState {
-    step: 'welcome' | 'symptom-collection' | 'dynamic-questions' | 'name' | 'results';
+    step: 'welcome' | 'symptom-collection' | 'dynamic-questions' | 'results';
     dataStep: number;
     patientContext: PatientContext;
     currentQuestion: MedicalQuestion | null;
@@ -44,7 +43,7 @@ interface DiagnosisState {
 
 const DiagnosisContainer: React.FC = () => {
     const { t } = useTranslation();
-    const [step, setStep] = useState<'welcome' | 'symptom-collection' | 'dynamic-questions' | 'name' | 'results'>('welcome');
+    const [step, setStep] = useState<'welcome' | 'symptom-collection' | 'dynamic-questions' | 'results'>('welcome');
     const [dataStep, setDataStep] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -83,7 +82,7 @@ const DiagnosisContainer: React.FC = () => {
             try {
                 const parsed: DiagnosisState = JSON.parse(savedState);
 
-                if (parsed.step && ['welcome', 'symptom-collection', 'dynamic-questions', 'name', 'results'].includes(parsed.step)) {
+                if (parsed.step && ['welcome', 'symptom-collection', 'dynamic-questions', 'results'].includes(parsed.step)) {
                     setStep(parsed.step);
                     setDataStep(parsed.dataStep || 0);
                     setPatientContext(parsed.patientContext || {
@@ -207,17 +206,6 @@ const DiagnosisContainer: React.FC = () => {
                        patientContext.gender === 'other' ? 'other' as const :
                        'prefer_not_to_say' as const,
                 name: patientContext.name,
-                medications: [],
-                allergies: [],
-                pastMedicalHistory: [],
-                familyHistory: [],
-                socialHistory: {
-                    smoking: false,
-                    alcohol: 'none' as const,
-                    exercise: 'light' as const,
-                    occupation: '',
-                    stress: 'moderate' as const
-                },
                 primarySymptom: patientContext.primarySymptom,
                 symptoms: [],
                 symptomTimeline: []
@@ -276,13 +264,19 @@ const DiagnosisContainer: React.FC = () => {
             } else {
                 // No questions needed, go directly to analysis
                 console.log('🎯 Enhanced system: No questions needed, proceeding to diagnosis');
-                await performDiagnosis();
+                await proceedToDiagnosis('init:no_question_or_shouldStop', {
+                    shouldStop: response.shouldStop,
+                    hasQuestion: !!response.question,
+                    stopReason: response.stopReason
+                });
             }
         } catch (error) {
             console.error('Error generating enhanced first question:', error);
             setError(t('diagnosisContainer.error.generatingQuestions'));
             // Fallback to diagnosis without additional questions
-            await performDiagnosis();
+            await proceedToDiagnosis('init:error_generating_first_question', {
+                error: String(error)
+            });
         } finally {
             setIsLoading(false);
         }
@@ -293,26 +287,40 @@ const DiagnosisContainer: React.FC = () => {
 
         console.log('🎯 Received answer for question:', currentQuestion.question, 'Answer:', answer);
 
-        // Save the answer
+        // Save the answer with both question text and answer
         const updatedAnswers = {
             ...questionAnswers,
-            [currentQuestion.id]: answer
+            [currentQuestion.id]: {
+                question: currentQuestion.question,
+                answer: answer
+            }
         };
         setQuestionAnswers(updatedAnswers);
 
-        console.log('📋 Updated symptom answers after question answer:', `${JSON.stringify(updatedAnswers)}`);
+        console.log('📋 Updated symptom answers after question answer:', {
+            totalAnswers: Object.keys(updatedAnswers).length,
+            answerKeys: Object.keys(updatedAnswers),
+            currentQuestionId: currentQuestion.id,
+            currentQuestionText: currentQuestion.question.substring(0, 50) + '...',
+            allAnswers: updatedAnswers
+        });
 
-        // Add question to history before generating next
-        setQuestionHistory(prev => [...prev, currentQuestion.question]);
+        // Add question to history before generating next (also keep a local copy to avoid stale state)
+        const updatedHistory = [...questionHistory, currentQuestion.question];
+        setQuestionHistory(updatedHistory);
 
         // Clear current question while generating next
         setCurrentQuestion(null);
 
         // Generate the next question using enhanced system
-        await generateNextQuestionBasedOnAnswer(answer);
+        await generateNextQuestionBasedOnAnswer(answer, updatedAnswers, updatedHistory);
     };
 
-    const generateNextQuestionBasedOnAnswer = async (lastAnswer: any) => {
+    const generateNextQuestionBasedOnAnswer = async (
+        lastAnswer: any,
+        answersSnapshot: any,
+        historySnapshot: string[]
+    ) => {
         setIsLoading(true);
 
         try {
@@ -320,39 +328,22 @@ const DiagnosisContainer: React.FC = () => {
                 throw new Error('Adaptive system not initialized');
             }
 
-            // Update adaptive system with new answer
-            const response = await generateNextQuestionWithAdaptiveSystem(
-                patientContext,
-                questionAnswers,
-                lastAnswer,
-                questionHistory,
-                adaptiveSystem
-            );
-
             // Update diagnosis tracker
-            const symptomDetail = convertAnswerToSymptomDetail(lastAnswer, questionHistory, patientContext.primarySymptom);
+            const symptomDetail = convertAnswerToSymptomDetail(lastAnswer, historySnapshot, patientContext.primarySymptom);
+
+            // Initialize aiConfidence at higher scope
+            let aiConfidence = diagnosticProgress?.currentConfidence || 0;
+            let aiTopDiagnosis = '';
+
             if (symptomDetail) {
                 diagnosisTracker.updateWithNewSymptom(symptomDetail);
 
-                // DEBUG: Get real-time confidence analysis after symptom update
-                const confidenceAnalysis = await diagnosisTracker.getRealTimeConfidenceAnalysis();
-                console.log('🔄 DEBUG - Heuristic confidence analysis:', {
-                    previousConfidence: diagnosticProgress?.currentConfidence || 0,
-                    newConfidence: confidenceAnalysis.currentConfidence,
-                    confidenceChange: confidenceAnalysis.confidenceChange,
-                    topDiagnosis: confidenceAnalysis.topDiagnosis,
-                    reasoning: confidenceAnalysis.reasoning
-                });
-
-                // Also get AI-based confidence analysis for more accurate results
-                let aiConfidence = confidenceAnalysis.currentConfidence;
-                let aiTopDiagnosis = confidenceAnalysis.topDiagnosis;
-
+                // AI-only confidence analysis (no heuristic confidence)
                 try {
                     // Update adaptive system with real-time AI analysis
-                    const aiProgress = await adaptiveSystem.updateWithRealTimeAnalysis(questionAnswers);
+                    const aiProgress = await adaptiveSystem.updateWithRealTimeAnalysis(answersSnapshot);
                     aiConfidence = aiProgress.currentConfidence;
-                    aiTopDiagnosis = aiProgress.possibleDiagnoses[0]?.name || confidenceAnalysis.topDiagnosis;
+                    aiTopDiagnosis = aiProgress.possibleDiagnoses[0]?.name || '';
 
                     console.log('🤖 DEBUG - AI confidence analysis:', {
                         aiConfidence,
@@ -360,96 +351,27 @@ const DiagnosisContainer: React.FC = () => {
                         aiDiagnoses: aiProgress.possibleDiagnoses.slice(0, 3).map(d => `${d.name}: ${d.confidence.toFixed(1)}%`)
                     });
                 } catch (error) {
-                    console.warn('⚠️ AI confidence analysis failed, using heuristic:', error);
+                    console.warn('⚠️ AI confidence analysis failed:', error);
                 }
 
-                // Use AI confidence if available, otherwise use heuristic
-                const finalConfidence = Math.max(aiConfidence, confidenceAnalysis.currentConfidence);
-
-                console.log('🎯 DEBUG - Final confidence update:', {
-                    heuristicConfidence: confidenceAnalysis.currentConfidence,
+                console.log('🎯 DEBUG - AI confidence update:', {
                     aiConfidence,
-                    finalConfidence,
-                    finalTopDiagnosis: aiTopDiagnosis,
-                    confidenceChange: finalConfidence - (diagnosticProgress?.currentConfidence || 0)
+                    aiTopDiagnosis,
+                    confidenceChange: aiConfidence - (diagnosticProgress?.currentConfidence || 0)
                 });
 
                 // Update both real-time confidence AND diagnostic progress to keep UI in sync
-                setRealTimeConfidence(finalConfidence);
-
-                // Also update diagnosticProgress.possibleDiagnoses with new confidence
-                console.log('🔍 DEBUG - diagnosticProgress check:', {
-                    diagnosticProgress: !!diagnosticProgress,
-                    possibleDiagnoses: diagnosticProgress?.possibleDiagnoses?.length || 0,
-                    finalConfidence,
-                    aiTopDiagnosis
-                });
-
-                if (diagnosticProgress) {
-                    const existingDiagnoses = diagnosticProgress.possibleDiagnoses || [];
-
-                    console.log('🔍 DEBUG - existingDiagnoses:', {
-                        length: existingDiagnoses.length,
-                        diagnoses: existingDiagnoses.map(d => `${d.name}: ${d.confidence}%`)
-                    });
-
-                    if (existingDiagnoses.length === 0 && aiTopDiagnosis) {
-                        // Create initial diagnosis if none exist
-                        const newDiagnosis = {
-                            name: aiTopDiagnosis,
-                            confidence: finalConfidence,
-                            likelihood: finalConfidence > 70 ? 'high' as const : finalConfidence > 40 ? 'moderate' as const : 'low' as const,
-                            urgency: 'moderate' as const,
-                            supportingSymptoms: [patientContext.primarySymptom],
-                            contradictingSymptoms: [],
-                            missingKeySymptoms: [],
-                            reasoning: `AI-generated diagnosis with ${finalConfidence.toFixed(1)}% confidence`
-                        };
-
-                        setDiagnosticProgress({
-                            ...diagnosticProgress,
-                            currentConfidence: finalConfidence,
-                            possibleDiagnoses: [newDiagnosis]
-                        });
-
-                        console.log('🆕 DEBUG - Created initial diagnosis:', newDiagnosis);
-                    } else if (existingDiagnoses.length > 0) {
-                    const updatedDiagnoses = existingDiagnoses.map((diagnosis, index) => {
-                        if (index === 0) {
-                            // Update top diagnosis with new confidence and name
-                            return {
-                                ...diagnosis,
-                                confidence: finalConfidence,
-                                name: aiTopDiagnosis || diagnosis.name
-                            };
-                        }
-                        // Reduce confidence of other diagnoses proportionally
-                        const reductionFactor = Math.max(0.5, 1 - (finalConfidence / 100));
-                        return {
-                            ...diagnosis,
-                            confidence: diagnosis.confidence * reductionFactor
-                        };
-                    });
-
-                    setDiagnosticProgress({
-                        ...diagnosticProgress,
-                        currentConfidence: finalConfidence,
-                        possibleDiagnoses: updatedDiagnoses.sort((a, b) => b.confidence - a.confidence)
-                    });
-
-                    console.log('🔄 DEBUG - Updated diagnosticProgress:', {
-                        oldTopDiagnosis: existingDiagnoses[0]?.name,
-                        newTopDiagnosis: updatedDiagnoses[0]?.name,
-                        oldConfidence: existingDiagnoses[0]?.confidence,
-                        newConfidence: finalConfidence
-                    });
-                    } else {
-                        console.log('⚠️ DEBUG - diagnosticProgress exists but no diagnoses found');
-                    }
-                } else {
-                    console.log('⚠️ DEBUG - No diagnosticProgress available');
-                }
+                setRealTimeConfidence(aiConfidence);
             }
+
+            // Now generate the next question using the updated answers/history (avoid stale state)
+            const response = await generateNextQuestionWithAdaptiveSystem(
+                patientContext,
+                answersSnapshot,
+                lastAnswer,
+                historySnapshot,
+                adaptiveSystem
+            );
 
             if (response.question && !response.shouldStop && response.adaptiveSystem) {
                 // Show the next question
@@ -462,49 +384,84 @@ const DiagnosisContainer: React.FC = () => {
                     console.log('🎯 Enhanced next question (#', questionCount + 1, '):', response.question);
                 }
 
-                // Update diagnostic progress
+                // Update diagnostic progress - preserve our AI confidence updates
                 const progress = response.adaptiveSystem.getDiagnosticProgress();
-                setDiagnosticProgress({
-                    currentConfidence: progress.currentConfidence,
-                    targetConfidence: progress.targetConfidence,
-                    totalQuestionsAsked: progress.totalQuestionsAsked,
-                    maxQuestions: progress.maxQuestions,
-                    nextQuestionStrategy: progress.nextQuestionStrategy,
-                    possibleDiagnoses: progress.possibleDiagnoses,
-                    ruledOutConditions: progress.ruledOutConditions
+
+                // IMPORTANT: don't read `diagnosticProgress` here (stale closure). Preserve from latest state.
+                setDiagnosticProgress(prev => {
+                    const preservedDiagnoses = prev?.possibleDiagnoses || [];
+                    const baseDiagnoses = preservedDiagnoses.length > 0 ? preservedDiagnoses : (progress.possibleDiagnoses || []);
+                    const confidenceToUse = progress.currentConfidence || (symptomDetail ? aiConfidence : 0);
+
+                    const updatedDiagnoses = baseDiagnoses
+                        .map((d: any, idx: number) => {
+                            if (idx !== 0) return d;
+                            return {
+                                ...d,
+                                name: aiTopDiagnosis || d.name,
+                                confidence: confidenceToUse
+                            };
+                        })
+                        .sort((a: any, b: any) => (b.confidence || 0) - (a.confidence || 0));
+
+                    return {
+                        currentConfidence: confidenceToUse,
+                        targetConfidence: progress.targetConfidence,
+                        totalQuestionsAsked: progress.totalQuestionsAsked,
+                        maxQuestions: progress.maxQuestions,
+                        nextQuestionStrategy: progress.nextQuestionStrategy,
+                        // Keep our updated diagnoses with AI confidence if we have them; otherwise fall back to system
+                        possibleDiagnoses: updatedDiagnoses,
+                        ruledOutConditions: progress.ruledOutConditions
+                    };
                 });
-                setRealTimeConfidence(progress.currentConfidence);
+
+                console.log('🔧 DEBUG - After diagnosticProgress update - AI confidence:', {
+                    // NOTE: the preserved diagnoses now come from state, not the stale closure variable
+                    aiConfidenceUsed: progress.currentConfidence || (symptomDetail ? aiConfidence : 0)
+                });
+                setRealTimeConfidence(progress.currentConfidence || (symptomDetail ? aiConfidence : 0));
                 setRuledOutConditions(progress.ruledOutConditions);
                 setBodySystemCoverage(diagnosisTracker.getBodySystemCoverage());
                 setSymptomCompleteness(diagnosisTracker.getSymptomCompleteness());
 
-                console.log('🎯 Enhanced current confidence:', progress.currentConfidence);
+                const aiConfidenceToUse = progress.currentConfidence || (symptomDetail ? aiConfidence : 0);
+                console.log('🎯 AI confidence:', aiConfidenceToUse);
                 console.log('🎯 Strategy:', progress.nextQuestionStrategy);
                 console.log('🎯 Progress check:', {
-                    currentConfidence: progress.currentConfidence,
+                    aiConfidence: aiConfidenceToUse,
                     targetConfidence: progress.targetConfidence,
                     totalQuestionsAsked: progress.totalQuestionsAsked,
                     maxQuestions: progress.maxQuestions,
-                    shouldContinue: progress.currentConfidence < progress.targetConfidence && 
+                    shouldContinue: aiConfidenceToUse < progress.targetConfidence && 
                                    progress.totalQuestionsAsked < progress.maxQuestions
                 });
             } else {
                 // AI is confident enough, proceed to diagnosis
-                const stopReason = response.shouldStop 
-                    ? 'System determined enough information collected' 
-                    : 'No question generated';
+                const stopReason =
+                    response.stopReason ||
+                    (response.shouldStop
+                        ? 'System determined enough information collected'
+                        : 'No question generated');
                 console.log('🛑 Stopping question generation and proceeding to diagnosis');
                 console.log('🛑 Stop reason:', stopReason);
-                console.log('🛑 Final confidence:', response?.confidence || 'unknown');
+                console.log('🛑 AI confidence:', aiConfidence);
                 console.log('🛑 Total questions asked:', questionCount);
                 console.log('🛑 Final ruled out conditions:', ruledOutConditions);
-                await performDiagnosis();
+                await proceedToDiagnosis('qa:stopped_or_no_question', {
+                    stopReason,
+                    shouldStop: response.shouldStop,
+                    hasQuestion: !!response.question,
+                    aiConfidence
+                }, answersSnapshot);
             }
         } catch (error) {
             console.error('Error generating enhanced next question:', error);
             setError(t('diagnosisContainer.error.checkingQuestions'));
             // Proceed with diagnosis even if error
-            await performDiagnosis();
+            await proceedToDiagnosis('qa:error_generating_next_question', {
+                error: String(error)
+            }, answersSnapshot);
         } finally {
             setIsLoading(false);
         }
@@ -584,12 +541,19 @@ const DiagnosisContainer: React.FC = () => {
         return BodySystem.GENERAL;
     };
 
-    const performDiagnosis = async () => {
+    const performDiagnosis = async (answersOverride?: Record<number, any>) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const diagnosisResults = await analyzeSymptoms(patientContext, questionAnswers);
+            const answersToUse = answersOverride ?? questionAnswers;
+            console.log('🧾 performDiagnosis() starting:', {
+                answersCount: answersToUse ? Object.keys(answersToUse).length : 0,
+                hasAdaptiveSystem: !!adaptiveSystem,
+                step,
+            });
+
+            const diagnosisResults = await analyzeSymptoms(patientContext, answersToUse);
             // Ensure diagnoses is always an array
             const diagnosesArray = Array.isArray(diagnosisResults) ? diagnosisResults : [];
             setDiagnoses(diagnosesArray);
@@ -613,12 +577,8 @@ const DiagnosisContainer: React.FC = () => {
             const updatedGuidance = await getMedicalGuidance(diagnosisResults, patientContext);
             setGuidance(updatedGuidance);
 
-            // Check if we have name, if not go to name screen
-            if (!patientContext.name) {
-                setStep('name');
-            } else {
-                setStep('results');
-            }
+            // Always proceed to results (name is optional; UI will fall back to "Patient")
+            setStep('results');
         } catch (error) {
             console.error('Error performing diagnosis:', error);
             setError(t('diagnosisContainer.error.performingDiagnosis'));
@@ -640,15 +600,25 @@ const DiagnosisContainer: React.FC = () => {
                 emergencyIndicators: []
             });
 
-            setStep('name');
+            setStep('results');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleNameNext = (name: string) => {
-        setPatientContext(prev => ({ ...prev, name }));
-        setStep('results');
+    const proceedToDiagnosis = async (
+        reason: string,
+        meta?: Record<string, any>,
+        answersOverride?: Record<number, any>
+    ) => {
+        console.log('🛑 Proceeding to diagnosis:', {
+            reason,
+            step,
+            hasCurrentQuestion: !!currentQuestion,
+            questionHistoryLen: questionHistory.length,
+            meta
+        });
+        await performDiagnosis(answersOverride);
     };
 
     const handleRestart = () => {
@@ -671,8 +641,25 @@ const DiagnosisContainer: React.FC = () => {
         setError(null);
     };
 
-    if (error) {
+    const renderWithStartOver = (content: React.ReactNode) => {
         return (
+            <div className="min-h-screen px-4 pt-8 pb-10">
+                {content}
+
+                <div className="max-w-4xl mx-auto mt-8 flex justify-center">
+                    <button
+                        onClick={handleRestart}
+                        className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm hover:shadow transition"
+                    >
+                        {t('quit.returnToHome', 'Quit & Return to Home')}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    if (error) {
+        return renderWithStartOver(
             <div className="max-w-md mx-auto mt-8 p-6 bg-red-50 border border-red-200 rounded-xl">
                 <div className="text-center">
                     <span className="text-4xl mb-4 block">⚠️</span>
@@ -692,7 +679,7 @@ const DiagnosisContainer: React.FC = () => {
     }
 
     if (isLoading) {
-        return (
+        return renderWithStartOver(
             <div className="max-w-md mx-auto mt-8 p-8 text-center">
                 <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-lg text-gray-600">
@@ -704,7 +691,7 @@ const DiagnosisContainer: React.FC = () => {
 
     switch (step) {
         case 'welcome':
-            return (
+            return renderWithStartOver(
                 <WelcomeScreen
                     onStart={() => setStep('symptom-collection')}
                     onRestart={handleRestart}
@@ -713,7 +700,7 @@ const DiagnosisContainer: React.FC = () => {
 
         case 'symptom-collection':
             const currentStep = symptomCollectionSteps[dataStep];
-            return (
+            return renderWithStartOver(
                 <SymptomCollectionCard
                     title={currentStep.title}
                     description={currentStep.description}
@@ -735,7 +722,7 @@ const DiagnosisContainer: React.FC = () => {
 
         case 'dynamic-questions':
             if (!currentQuestion) {
-                return (
+                return renderWithStartOver(
                     <div className="max-w-md mx-auto mt-8 p-8 text-center">
                         <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                         <p className="text-lg text-gray-600">
@@ -750,7 +737,7 @@ const DiagnosisContainer: React.FC = () => {
                 );
             }
 
-            return (
+            return renderWithStartOver(
                 <DynamicQuestionCard
                     question={currentQuestion}
                     onAnswer={handleQuestionAnswer}
@@ -760,17 +747,9 @@ const DiagnosisContainer: React.FC = () => {
                 />
             );
 
-        case 'name':
-            return (
-                <NameScreen
-                    onNext={handleNameNext}
-                    onBack={() => setStep('results')}
-                />
-            );
-
         case 'results':
             if (!guidance) {
-                return (
+                return renderWithStartOver(
                     <div className="max-w-md mx-auto mt-8 p-8 text-center">
                         <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                         <p className="text-lg text-gray-600">
@@ -780,7 +759,7 @@ const DiagnosisContainer: React.FC = () => {
                 );
             }
 
-            return (
+            return renderWithStartOver(
                 <DiagnosisResults
                     diagnoses={Array.isArray(diagnoses) ? diagnoses : []}
                     guidance={guidance}
@@ -790,7 +769,7 @@ const DiagnosisContainer: React.FC = () => {
             );
 
         default:
-            return (
+            return renderWithStartOver(
                 <WelcomeScreen
                     onStart={() => setStep('symptom-collection')}
                     onRestart={handleRestart}

@@ -10,9 +10,8 @@ import {
     BodySystem,
     SymptomAnalysisResult
 } from '../types/symptomProfile';
-import {
-    QUESTION_STRATEGIES
-} from '../data/medicalKnowledgeGraph';
+// NOTE: We intentionally do NOT use the knowledge-graph QUESTION_STRATEGIES for next-question selection.
+// Next questions are AI-determined from answer history via `generateNextQuestionFallback(...)`.
 
 // Type for medical chat message with reasoning_details
 type MedicalChatMessage = {
@@ -23,12 +22,12 @@ type MedicalChatMessage = {
 
 // OpenRouter-only configuration
 const getOpenRouterConfig = () => {
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
-    const baseURL = process.env.REACT_APP_OPENAI_BASE_URL;
-    const model = process.env.REACT_APP_OPENAI_MODEL;
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY_1;
+    const baseURL = process.env.REACT_APP_OPENAI_BASE_URL_1;
+    const model = process.env.REACT_APP_OPENAI_MODEL_1;
 
     if (!apiKey) {
-        throw new Error('OpenRouter API key is required. Set REACT_APP_OPENROUTER_API_KEY environment variable.');
+        throw new Error('OpenRouter API key is required. Set REACT_APP_OPENAI_API_KEY_1 environment variable.');
     }
 
     return { apiKey, baseURL, model };
@@ -285,58 +284,11 @@ export class AdaptiveDiagnosticSystem {
     }
 
     private generateRecommendedQuestions(symptomDetails: SymptomDetail[]): MedicalQuestion[] {
-        const questions: MedicalQuestion[] = [];
-
-        // Use knowledge graph for discriminative questions
-        const primarySymptom = this.patientProfile.primarySymptom;
-        const strategy = QUESTION_STRATEGIES.symptomTrees[primarySymptom];
-
-        if (strategy) {
-            // Filter questions that haven't been asked
-            const availableQuestions = strategy.discriminativeQuestions.filter(q =>
-                !this.questionHistory.some(h => h.includes(q.question.substring(0, 20)))
-            );
-
-            // Sort by expected information gain
-            availableQuestions.sort((a, b) => b.expectedInformationGain - a.expectedInformationGain);
-
-            // Return top 3 questions
-            questions.push(...availableQuestions.slice(0, 3));
-        } else {
-            // Generate generic questions based on missing information
-            const missingInfo = this.identifyMissingInformation(symptomDetails);
-
-            if (missingInfo.includes('Severity of primary symptom')) {
-                questions.push({
-                    id: questions.length + 1,
-                    question: `On a scale of 1-10, how severe is your ${primarySymptom}?`,
-                    type: 'scale',
-                    scaleRange: { min: 1, max: 10 },
-                    targetedSymptom: primarySymptom,
-                    purpose: 'confirmation',
-                    expectedInformationGain: 85,
-                    bodySystem: this.getPrimaryBodySystem()
-                });
-            }
-
-            if (missingInfo.includes('Duration of primary symptom')) {
-                questions.push({
-                    id: questions.length + 1,
-                    question: `How long have you been experiencing ${primarySymptom}?`,
-                    type: 'multiple_choice',
-                    options: [
-                        'Less than an hour', 'A few hours', 'About one day', 'A few days',
-                        'About one week', 'A few weeks', 'About one month', 'More than a month'
-                    ],
-                    targetedSymptom: primarySymptom,
-                    purpose: 'confirmation',
-                    expectedInformationGain: 90,
-                    bodySystem: this.getPrimaryBodySystem()
-                });
-            }
-        }
-
-        return questions;
+        // Intentionally disabled: next questions should be determined by AI from answer history.
+        // We keep `analyzeSymptomProfile` for completeness/red-flag calculations, but it no longer
+        // recommends questions.
+        void symptomDetails;
+        return [];
     }
 
     private getPrimaryBodySystem(): BodySystem {
@@ -805,7 +757,13 @@ export const generateNextQuestionWithAdaptiveSystem = async (
     lastAnswer?: any,
     questionHistory: string[] = [],
     adaptiveSystem?: AdaptiveDiagnosticSystem
-): Promise<{ question: MedicalQuestion | null, confidence: number, shouldStop: boolean, adaptiveSystem?: AdaptiveDiagnosticSystem }> => {
+): Promise<{ question: MedicalQuestion | null, confidence: number, shouldStop: boolean, stopReason?: string, adaptiveSystem?: AdaptiveDiagnosticSystem }> => {
+    console.log('🧩 generateNextQuestionWithAdaptiveSystem() called:', {
+        answersCount: Object.keys(previousAnswers || {}).length,
+        hasLastAnswer: !!lastAnswer,
+        questionHistoryLen: questionHistory.length,
+        hasAdaptiveSystem: !!adaptiveSystem
+    });
 
     // Convert PatientContext to PatientProfile
     const patientProfile: PatientProfile = {
@@ -815,17 +773,6 @@ export const generateNextQuestionWithAdaptiveSystem = async (
                patientContext.gender === 'other' ? 'other' as const :
                'prefer_not_to_say' as const,
         name: patientContext.name,
-        medications: [],
-        allergies: [],
-        pastMedicalHistory: [],
-        familyHistory: [],
-        socialHistory: {
-            smoking: false,
-            alcohol: 'none' as const,
-            exercise: 'light' as const,
-            occupation: '',
-            stress: 'moderate' as const
-        },
         primarySymptom: patientContext.primarySymptom,
         symptoms: [],
         symptomTimeline: []
@@ -868,29 +815,13 @@ export const generateNextQuestionWithAdaptiveSystem = async (
             question: null,
             confidence: progress.currentConfidence,
             shouldStop: true,
+            stopReason: stopCheck.reason,
             adaptiveSystem: system
         };
     }
 
-    // Get recommended questions from the adaptive system
-    const analysis = system.analyzeSymptomProfile(patientProfile.symptoms);
-    const progress = system.getDiagnosticProgress();
-
-    if (analysis.nextRecommendedQuestions.length > 0) {
-        const nextQuestion = analysis.nextRecommendedQuestions[0];
-
-        // Return the enhanced MedicalQuestion directly
-        const medicalQuestion: MedicalQuestion = nextQuestion;
-
-        return {
-            question: medicalQuestion,
-            confidence: progress.currentConfidence,
-            shouldStop: false,
-            adaptiveSystem: system
-        };
-    }
-
-    // Fallback to AI-generated question if no recommended questions
+    // AI-driven next question selection (no knowledge-graph heuristics).
+    // The fallback generator prompt uses `previousAnswers` + `questionHistory` to decide what to ask next.
     return generateNextQuestionFallback(patientContext, previousAnswers, lastAnswer, questionHistory, system);
 };
 
@@ -997,7 +928,7 @@ const generateNextQuestionFallback = async (
     lastAnswer?: any,
     questionHistory: string[] = [],
     adaptiveSystem?: AdaptiveDiagnosticSystem
-): Promise<{ question: MedicalQuestion | null, confidence: number, shouldStop: boolean, adaptiveSystem?: AdaptiveDiagnosticSystem }> => {
+): Promise<{ question: MedicalQuestion | null, confidence: number, shouldStop: boolean, stopReason?: string, adaptiveSystem?: AdaptiveDiagnosticSystem }> => {
     const language = getLanguageForPrompt();
     const { model } = getOpenRouterConfig();
     const client = getOpenRouterClient();
@@ -1008,69 +939,40 @@ const generateNextQuestionFallback = async (
     const diagnosticProgress = adaptiveSystem?.getDiagnosticProgress();
     const possibleDiagnoses = adaptiveSystem?.getPossibleDiagnoses() || [];
 
-    const prompt = `
-    PATIENT PROFILE:
-    - Age: ${patientContext.age} years old
-    - Gender: ${patientContext.gender}
-    - Primary Symptom: "${patientContext.primarySymptom}"
+    const noneFirstQuestion = i18n.t('medicalAI.noneFirstQuestion', { lng: language, ns: 'prompts' });
+    const noQuestionsAskedYet = i18n.t('medicalAI.noQuestionsAskedYet', { lng: language, ns: 'prompts' });
+    const noPossibleDiagnoses = i18n.t('medicalAI.noPossibleDiagnoses', { lng: language, ns: 'prompts' });
 
-    PREVIOUS ANSWERS: ${JSON.stringify(previousAnswers)}
-    LAST ANSWER RECEIVED: ${lastAnswer ? JSON.stringify(lastAnswer) : 'None (first question)'}
+    const questionsAlreadyAsked =
+        questionHistory.length > 0
+            ? questionHistory.map((q, i) => `${i + 1}. "${q}"`).join('\n')
+            : noQuestionsAskedYet;
 
-    QUESTIONS ALREADY ASKED:
-    ${questionHistory.length > 0 ? questionHistory.map((q, i) => `${i + 1}. "${q}"`).join('\n    ') : 'No questions asked yet'}
+    const possibleDiagnosesList =
+        possibleDiagnoses.length > 0
+            ? possibleDiagnoses
+                .slice(0, 3)
+                .map(d => `- ${d.name}: ${d.confidence.toFixed(1)}% (${d.likelihood})`)
+                .join('\n')
+            : noPossibleDiagnoses;
 
-    ADAPTIVE DIAGNOSTIC CONTEXT:
-    - Current Confidence: ${diagnosticProgress?.currentConfidence || 0}%
-    - Target Confidence: ${diagnosticProgress?.targetConfidence || 70}%
-    - Questions Asked: ${diagnosticProgress?.totalQuestionsAsked || 0}/20
-    - Next Strategy: ${diagnosticProgress?.nextQuestionStrategy || 'discriminative'}
-
-    POSSIBLE DIAGNOSES:
-    ${possibleDiagnoses.slice(0, 3).map(d => `- ${d.name}: ${d.confidence.toFixed(1)}% (${d.likelihood})`).join('\n    ')}
-
-    TASK:
-    You are an AI medical diagnostic assistant using an enhanced adaptive questioning system.
-    Based on the patient's current symptom profile, diagnostic progress, and possible diagnoses, determine the SINGLE MOST IMPORTANT next question to ask.
-
-    ADAPTIVE QUESTIONING STRATEGY:
-    - DISCRIMINATIVE: Ask questions that best differentiate between top 2-3 possible diagnoses
-    - CONFIRMATION: Ask questions to confirm the leading diagnosis (>70% confidence)
-    - RED_FLAG_CHECK: Ask questions to rule out emergency conditions
-    - COMPLETENESS: Ask questions to fill missing critical symptom information
-
-    INFORMATION MAXIMIZATION:
-    - Choose questions with highest expected information gain
-    - Prioritize questions that could significantly change diagnosis probabilities
-    - Focus on distinguishing features between similar conditions
-    - Check for red flag symptoms when urgency is high
-
-    CRITICAL RULES:
-    - Generate ONLY ONE question per request
-    - Each question must ask ONLY ONE specific piece of information
-    - NEVER duplicate previously asked questions
-    - Consider the adaptive system's current strategy and diagnostic needs
-    - Question should be clinically relevant and diagnostically valuable
-
-    RESPONSE REQUIREMENTS:
-    - responseType: "scale" for severity (1-10)
-    - responseType: "multiple_choice" for all other types with appropriate options
-    - Use ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}
-
-    Return a JSON object with:
-    {
-        "question": {
-            "id": 1,
-            "question": "The single most important next question",
-            "questionType": "one of: severity|duration|location|frequency|triggers|associated|medical_history|lifestyle",
-            "responseType": "scale|multiple_choice",
-            "options": ["array of options if multiple_choice"]
-        },
-        "confidence": number (0-100),
-        "shouldStop": boolean (true if confident enough for diagnosis),
-        "reasoning": "Brief explanation of why you chose this question or decided to stop"
-    }
-    `;
+    const prompt = i18n.t('medicalAI.nextQuestionPrompt', {
+        lng: language,
+        ns: 'prompts',
+        age: patientContext.age,
+        gender: patientContext.gender,
+        primarySymptom: patientContext.primarySymptom,
+        previousAnswersJson: JSON.stringify(previousAnswers),
+        lastAnswerJson: lastAnswer ? JSON.stringify(lastAnswer) : noneFirstQuestion,
+        questionsAlreadyAsked,
+        currentConfidence: diagnosticProgress?.currentConfidence || 0,
+        targetConfidence: diagnosticProgress?.targetConfidence || 70,
+        questionsAsked: diagnosticProgress?.totalQuestionsAsked || 0,
+        maxQuestions: diagnosticProgress?.maxQuestions || 20,
+        nextStrategy: diagnosticProgress?.nextQuestionStrategy || 'discriminative',
+        possibleDiagnosesList,
+        languageMode: language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'
+    });
 
     // Check if model supports reasoning
     const supportsReasoning = model?.includes(':free') || false;
@@ -1133,9 +1035,17 @@ const generateNextQuestionFallback = async (
                 // Determine body system based on question type and current diagnoses
                 const bodySystem = possibleDiagnoses.length > 0 ? possibleDiagnoses[0].supportingSymptoms[0] as BodySystem : undefined;
 
+                // Generate unique ID using timestamp to prevent conflicts
+                const uniqueId = Date.now() + Math.random();
+                console.log('🆔 Generated unique question ID:', {
+                    uniqueId,
+                    timestamp: Date.now(),
+                    questionText: question.substring(0, 50) + '...'
+                });
+
                 result.question = {
                     ...result.question,
-                    id: result.question.id || 1,
+                    id: uniqueId,
                     question,
                     type: responseType as 'scale' | 'multiple_choice' | 'yes_no' | 'text' | 'location' | 'duration',
                     questionType,
@@ -1153,8 +1063,27 @@ const generateNextQuestionFallback = async (
         "Failed to generate enhanced next question after retries"
     );
 
+    // Ensure we always log (and propagate) why the fallback decided to stop.
+    // The fallback model typically returns a "reasoning" field explaining the choice.
+    const stopReason =
+        response?.shouldStop
+            ? (typeof response?.reasoning === 'string' && response.reasoning.trim().length > 0
+                ? response.reasoning.trim()
+                : 'Fallback model returned shouldStop=true (no reasoning provided)')
+            : undefined;
+
+    if (response?.shouldStop) {
+        console.log('🛑 Fallback question generation stopped:', {
+            confidence: response?.confidence,
+            stopReason,
+            answersCount: Object.keys(previousAnswers || {}).length,
+            questionHistoryLen: questionHistory.length
+        });
+    }
+
     return {
         ...response,
+        stopReason,
         adaptiveSystem
     };
 };
@@ -1231,46 +1160,31 @@ export const analyzeSymptoms = async (
     const SYSTEM_PROMPT = i18n.t('medicalAI.systemPrompt', { lng: language, ns: 'prompts' });
 
     const prompt = `
-    PATIENT PROFILE:
-    - Age: ${patientContext.age} years old
-    - Gender: ${patientContext.gender}
-    - Primary Symptom: "${patientContext.primarySymptom}"
+    LANGUAGE_MODE: ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}
 
-    SYMPTOM QUESTIONNAIRE RESPONSES:
+    PATIENT PROFILE:
+    - Age: ${patientContext.age}
+    - Gender: ${patientContext.gender}
+    - Primary Complaint: "${patientContext.primarySymptom}"
+
+    CLINICAL QUESTIONNAIRE DATA:
     ${JSON.stringify(symptomAnswers)}
 
-    TASK:
-    You are an AI medical diagnostic assistant. Based on the patient's profile and symptom questionnaire, provide the top 3 most likely differential diagnoses with probability estimates.
-
-    REQUIREMENTS:
-    1. Consider the patient's age, gender, and symptom patterns
-    2. Provide realistic probability percentages that sum to ≤100%
-    3. Include confidence level (high/medium/low) based on available information
-    4. Assess urgency level for each diagnosis
-    5. Provide clear clinical reasoning for each diagnosis
-    6. Use ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}
-
-    DIAGNOSIS CATEGORIES:
-    - Common conditions with these symptoms
-    - Red flag/serious conditions that must be considered
-    - Chronic vs acute possibilities
-    - Lifestyle-related factors
-
-    Return a JSON array with exactly 3 diagnoses:
-    [
-        {
-            "condition": "Name of medical condition",
-            "probability": number (0-100),
-            "confidence": "high|medium|low",
-            "reasoning": "Detailed explanation of why this diagnosis fits the symptoms",
-            "urgencyLevel": "emergency|urgent|routine|self_care"
-        }
-    ]
-
-    If this appears to be a medical emergency, clearly indicate this in the urgencyLevel and reasoning.
+    /* INSTRUCTION */
+    Based on the patient profile and clinical data above, output the JSON array of the top 3 differential diagnoses.
     `;
 
-    
+    // Log the detailed prompt content
+    console.log('🔍 === ANALYZE SYMPTOMS PROMPT CONTENT ===');
+    console.log('🔍 LANGUAGE_MODE:', language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English');
+    console.log('🔍 PATIENT PROFILE:');
+    console.log(`  - Age: ${patientContext.age}`);
+    console.log(`  - Gender: ${patientContext.gender}`);
+    console.log(`  - Primary Complaint: "${patientContext.primarySymptom}"`);
+    console.log('🔍 CLINICAL QUESTIONNAIRE DATA:', JSON.stringify(symptomAnswers, null, 2));
+    console.log('🔍 INSTRUCTION: Based on the patient profile and clinical data above, output the JSON array of the top 3 differential diagnoses.');
+    console.log('🔍 === END PROMPT CONTENT ===\n');
+
     console.log('🔍 Starting analyzeSymptoms API call with:', {
         model,
         language,
@@ -1294,8 +1208,8 @@ export const analyzeSymptoms = async (
                 model: params.model,
                 messagesCount: params.messages.length,
                 responseFormat: params.response_format,
-                systemPromptPreview: SYSTEM_PROMPT.substring(0, 1000) + '...',
-                userPromptPreview: prompt.substring(0, 4000) + '...'
+                systemPromptPreview: SYSTEM_PROMPT.substring(0, 100) + '...',
+                userPromptPreview: prompt.substring(0, 20000) + '...'
             });
 
             const completion = await client.chat.completions.create(params);
@@ -1346,6 +1260,16 @@ export const analyzeSymptoms = async (
                 if (Array.isArray(result.diagnoses)) {
                     console.log('✅ Found array in result.diagnoses');
                     return result.diagnoses;
+                } else if (Array.isArray(result.differential_diagnoses)) {
+                    console.log('✅ Found array in result.differential_diagnoses, transforming format...');
+                    // Transform the format to match expected structure
+                    return result.differential_diagnoses.map((item: any) => ({
+                        condition: item.diagnosis || 'Unknown condition',
+                        probability: 33, // Default probability when not provided
+                        confidence: 'medium' as const,
+                        reasoning: item.rationale || 'No reasoning provided',
+                        urgencyLevel: item.emergencyWarning && item.emergencyWarning.length > 0 ? 'urgent' as const : 'routine' as const
+                    }));
                 } else if (Array.isArray(result.data)) {
                     console.log('✅ Found array in result.data');
                     return result.data;
@@ -1395,33 +1319,19 @@ export const getMedicalGuidance = async (
     const SYSTEM_PROMPT = i18n.t('medicalAI.systemPrompt', { lng: language, ns: 'prompts' });
 
     const prompt = `
-    PATIENT PROFILE:
-    - Age: ${patientContext.age} years old
-    - Gender: ${patientContext.gender}
+    /* INPUT CONTEXT */
+    LANGUAGE_MODE: ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}
 
-    DIFFERENTIAL DIAGNOSES:
+    PATIENT PROFILE:
+    - Age: ${patientContext.age}
+    - Gender: ${patientContext.gender}
+    - Primary Complaint: "${patientContext.primarySymptom}"
+
+    CLINICAL QUESTIONNAIRE DATA:
     ${JSON.stringify(diagnoses)}
 
-    TASK:
-    You are an AI medical assistant. Based on the differential diagnoses and patient profile, provide comprehensive medical guidance.
-
-    REQUIREMENTS:
-    1. Provide clear, actionable next steps
-    2. Include safe self-care recommendations when appropriate
-    3. Clearly state when to seek professional medical care
-    4. List emergency/red flag symptoms that require immediate attention
-    5. Use ${language === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'}
-    6. Be empathetic but professional
-
-    Return a JSON object:
-    {
-        "nextSteps": ["specific action item 1", "specific action item 2"],
-        "selfCareRecommendations": ["safe home remedy 1", "safe home remedy 2"],
-        "whenToSeekCare": ["specific situation 1", "specific situation 2"],
-        "emergencyIndicators": ["red flag symptom 1", "red flag symptom 2"]
-    }
-
-    IMPORTANT: Always include a clear disclaimer that this is not a substitute for professional medical care.
+    /* INSTRUCTION */
+    Based on the patient profile and clinical data above, output the JSON array of the top 3 differential diagnoses.
     `;
 
     return withRetry(

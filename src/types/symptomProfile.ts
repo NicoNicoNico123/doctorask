@@ -48,11 +48,11 @@ export interface PatientProfile {
   name: string;
 
   // Medical history
-  medications: string[];
-  allergies: string[];
-  pastMedicalHistory: string[];
-  familyHistory: string[];
-  socialHistory: {
+  medications?: string[];
+  allergies?: string[];
+  pastMedicalHistory?: string[];
+  familyHistory?: string[];
+  socialHistory?: {
     smoking?: boolean;
     alcohol?: 'none' | 'social' | 'moderate' | 'heavy';
     exercise?: 'none' | 'light' | 'moderate' | 'heavy';

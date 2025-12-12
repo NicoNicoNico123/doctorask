@@ -30,6 +30,17 @@ const DynamicQuestionCard: React.FC<DynamicQuestionCardProps> = ({
     const { t } = useTranslation();
     const [answer, setAnswer] = useState<any>('');
 
+    // Debug: Log when diagnosticProgress changes
+    React.useEffect(() => {
+        if (diagnosticProgress) {
+            console.log('🎯 DynamicQuestionCard - diagnosticProgress updated:', {
+                possibleDiagnoses: diagnosticProgress.possibleDiagnoses?.length || 0,
+                diagnoses: diagnosticProgress.possibleDiagnoses?.map(d => `${d.name}: ${d.confidence.toFixed(1)}%`) || [],
+                currentConfidence: diagnosticProgress.currentConfidence
+            });
+        }
+    }, [diagnosticProgress]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (answer || answer === 0) { // Allow 0 for severity scales
