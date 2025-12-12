@@ -13,7 +13,6 @@ import {
     analyzeSymptoms,
     getMedicalGuidance
 } from '../services/medicalAIService';
-import { DiagnosisTracker } from '../services/diagnosisTrackerService';
 import { PatientProfile, SymptomDetail, BodySystem, MedicalQuestion } from '../types/symptomProfile';
 
 const STORAGE_KEY = 'medical_diagnosis_state';
@@ -29,7 +28,6 @@ interface DiagnosisState {
     diagnoses: Diagnosis[];
     guidance: MedicalGuidance | null;
     adaptiveSystem?: AdaptiveDiagnosticSystem;
-    diagnosisTracker?: DiagnosisTracker;
     diagnosticProgress?: {
         currentConfidence: number;
         targetConfidence: number;
@@ -65,12 +63,8 @@ const DiagnosisContainer: React.FC = () => {
 
     // Enhanced adaptive diagnostic system state
     const [adaptiveSystem, setAdaptiveSystem] = useState<AdaptiveDiagnosticSystem | null>(null);
-    const [diagnosisTracker, setDiagnosisTracker] = useState<DiagnosisTracker | null>(null);
     const [diagnosticProgress, setDiagnosticProgress] = useState<DiagnosisState['diagnosticProgress'] | undefined>(undefined);
-    const [realTimeConfidence, setRealTimeConfidence] = useState(0);
     const [ruledOutConditions, setRuledOutConditions] = useState<any[]>([]);
-    const [bodySystemCoverage, setBodySystemCoverage] = useState<BodySystem[]>([]);
-    const [symptomCompleteness, setSymptomCompleteness] = useState(0);
 
     // Load state from localStorage on mount
     useEffect(() => {
@@ -99,11 +93,10 @@ const DiagnosisContainer: React.FC = () => {
                     // Restore adaptive system state
                     if (parsed.diagnosticProgress) {
                         setDiagnosticProgress(parsed.diagnosticProgress);
-                        setRealTimeConfidence(parsed.diagnosticProgress.currentConfidence);
                         setRuledOutConditions(parsed.diagnosticProgress.ruledOutConditions || []);
                     }
 
-                    // Note: We don't restore the actual adaptiveSystem and diagnosisTracker instances
+                    // Note: We don't restore the actual adaptiveSystem instance
                     // as they contain complex class instances that don't serialize well.
                     // They will be recreated as needed.
                 }
@@ -129,7 +122,6 @@ const DiagnosisContainer: React.FC = () => {
             guidance: guidance || null,
             // Don't save the actual adaptive system instances, just the progress
             adaptiveSystem: undefined,
-            diagnosisTracker: undefined,
             diagnosticProgress
         };
 
@@ -212,10 +204,8 @@ const DiagnosisContainer: React.FC = () => {
             };
 
             const adaptive = new AdaptiveDiagnosticSystem(patientProfile);
-            const tracker = new DiagnosisTracker(patientProfile);
 
             setAdaptiveSystem(adaptive);
-            setDiagnosisTracker(tracker);
 
             // Perform initial AI analysis to get translated diagnosis names
             console.log('🔍 Performing initial AI analysis for diagnosis translation...');
@@ -256,7 +246,6 @@ const DiagnosisContainer: React.FC = () => {
                     possibleDiagnoses: progress.possibleDiagnoses,
                     ruledOutConditions: progress.ruledOutConditions
                 });
-                setRealTimeConfidence(progress.currentConfidence);
                 setRuledOutConditions(progress.ruledOutConditions);
 
                 console.log('🎯 Enhanced first question generated:', response.question);
@@ -324,11 +313,10 @@ const DiagnosisContainer: React.FC = () => {
         setIsLoading(true);
 
         try {
-            if (!adaptiveSystem || !diagnosisTracker) {
+            if (!adaptiveSystem) {
                 throw new Error('Adaptive system not initialized');
             }
 
-            // Update diagnosis tracker
             const symptomDetail = convertAnswerToSymptomDetail(lastAnswer, historySnapshot, patientContext.primarySymptom);
 
             // Initialize aiConfidence at higher scope
@@ -336,8 +324,6 @@ const DiagnosisContainer: React.FC = () => {
             let aiTopDiagnosis = '';
 
             if (symptomDetail) {
-                diagnosisTracker.updateWithNewSymptom(symptomDetail);
-
                 // AI-only confidence analysis (no heuristic confidence)
                 try {
                     // Update adaptive system with real-time AI analysis
@@ -359,9 +345,6 @@ const DiagnosisContainer: React.FC = () => {
                     aiTopDiagnosis,
                     confidenceChange: aiConfidence - (diagnosticProgress?.currentConfidence || 0)
                 });
-
-                // Update both real-time confidence AND diagnostic progress to keep UI in sync
-                setRealTimeConfidence(aiConfidence);
             }
 
             // Now generate the next question using the updated answers/history (avoid stale state)
@@ -420,10 +403,7 @@ const DiagnosisContainer: React.FC = () => {
                     // NOTE: the preserved diagnoses now come from state, not the stale closure variable
                     aiConfidenceUsed: progress.currentConfidence || (symptomDetail ? aiConfidence : 0)
                 });
-                setRealTimeConfidence(progress.currentConfidence || (symptomDetail ? aiConfidence : 0));
                 setRuledOutConditions(progress.ruledOutConditions);
-                setBodySystemCoverage(diagnosisTracker.getBodySystemCoverage());
-                setSymptomCompleteness(diagnosisTracker.getSymptomCompleteness());
 
                 const aiConfidenceToUse = progress.currentConfidence || (symptomDetail ? aiConfidence : 0);
                 console.log('🎯 AI confidence:', aiConfidenceToUse);
@@ -641,19 +621,25 @@ const DiagnosisContainer: React.FC = () => {
         setError(null);
     };
 
-    const renderWithStartOver = (content: React.ReactNode) => {
+    const renderWithStartOver = (
+        content: React.ReactNode,
+        opts?: { showReturnToHome?: boolean }
+    ) => {
+        const showReturnToHome = opts?.showReturnToHome ?? true;
         return (
             <div className="min-h-screen px-4 pt-8 pb-10">
                 {content}
 
-                <div className="max-w-4xl mx-auto mt-8 flex justify-center">
-                    <button
-                        onClick={handleRestart}
-                        className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm hover:shadow transition"
-                    >
-                        {t('quit.returnToHome', 'Quit & Return to Home')}
-                    </button>
-                </div>
+                {showReturnToHome && (
+                    <div className="max-w-4xl mx-auto mt-8 flex justify-center">
+                        <button
+                            onClick={handleRestart}
+                            className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm hover:shadow transition"
+                        >
+                            {t('diagnosisContainer.quit.returnToHome')}
+                        </button>
+                    </div>
+                )}
             </div>
         );
     };
@@ -695,7 +681,8 @@ const DiagnosisContainer: React.FC = () => {
                 <WelcomeScreen
                     onStart={() => setStep('symptom-collection')}
                     onRestart={handleRestart}
-                />
+                />,
+                { showReturnToHome: false }
             );
 
         case 'symptom-collection':
@@ -773,7 +760,8 @@ const DiagnosisContainer: React.FC = () => {
                 <WelcomeScreen
                     onStart={() => setStep('symptom-collection')}
                     onRestart={handleRestart}
-                />
+                />,
+                { showReturnToHome: false }
             );
     }
 };

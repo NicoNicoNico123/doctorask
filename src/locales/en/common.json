@@ -1,113 +1,12 @@
 {
-  "welcome": {
-    "title": "MBTI Personality Quiz",
-    "description": "Discover your true self with questions personalized just for you. Uncover insights about your strengths, relationships, and career path.",
-    "startButton": "Start Quiz"
-  },
-  "dataCollection": {
-    "title": "Let's Personalize Your Experience",
-    "subtitle": "This helps us tailor the questions to your life stage and interests.",
-    "age": "Age",
-    "ageQuestion": "How old are you?",
-    "ageDescription": "Age helps us understand your life stage and experiences.",
-    "occupationQuestion": "What do you do?",
-    "occupation": "Occupation",
-    "occupationDescription": "Your work context helps create relevant scenarios.",
-    "occupationPlaceholder": "e.g. Software Engineer, Student, Artist",
-    "genderQuestion": "How do you identify?",
-    "genderDescription": "This helps us consider different social perspectives.",
-    "hobbies": "Hobbies & Interests",
-    "hobbiesQuestion": "What are your hobbies and interests?",
-    "hobbiesDescription": "Add up to 5 interests as tags to help us create personalized examples for you.",
-    "hobbiesPlaceholder": "e.g. Hiking, Gaming, Reading, Photography, Cooking",
-    "nextButton": "Next",
-    "genderOptions": {
-      "male": "Male",
-      "female": "Female",
-      "nonBinary": "Non-binary",
-      "preferNotToSay": "Prefer not to say"
-    }
-  },
-  "question": {
-    "progress": "Question {{current}} of {{total}}",
-    "optionA": "A",
-    "optionB": "B"
-  },
-  "navigation": {
-    "previous": "Previous",
-    "next": "Next",
-    "submit": "Submit"
-  },
-  "quit": {
-    "returnToHome": "Quit & Return to Home"
-  },
-  "nameScreen": {
-    "title": "What's your name?",
-    "description": "Let us know your name so we can personalize your results.",
-    "placeholder": "Enter your name",
-    "nextButton": "Next",
-    "completeButton": "Complete & Get Results",
-    "finalStepHint": "Almost done! Your personalized MBTI results are just one step away."
-  },
-  "tagInput": {
-    "noTagsPlaceholder": "Add tags using Enter or comma",
-    "inputPlaceholder": "Type and press Enter or comma to add tag",
-    "atLimitPlaceholder": "Maximum tags reached",
-    "removeTag": "Remove tag",
-    "instructions": "Type your interests and press Enter or comma to add them as tags. Maximum {{maxTags}} tags."
-  },
-  "results": {
-    "title": "Your Personality Type",
-    "subtitle": "Based on your responses, here's your personality analysis:",
-    "retakeTest": "🔄 Retake Test",
-    "shareResults": "📤 Share Results",
-    "saveResults": "🖨️ Save Results",
-    "continueChat": "Continue exploring your personality",
-    "analysisTitle": "Personality Analysis",
-    "chatTitle": "Ask Questions About Your Type",
-    "chatSubtitle": "Chat with me about your {{personalityType}} personality type",
-    "yourProfile": "Your Profile",
-    "quickActions": "Quick Actions",
-    "disclaimer": "This MBTI assessment is for educational and self-discovery purposes only. It's not a clinical diagnosis. Consider this as a starting point for understanding yourself better.",
-    "analysisSubtitle": "AI-powered insights based on your {{personalityType}} personality type",
-    "analysis": {
-      "tabs": {
-        "overview": "Overview",
-        "career": "Career",
-        "relationships": "Relationships",
-        "growth": "Growth"
-      },
-      "overview": "Summary",
-      "strengths": "Strengths",
-      "growthAreas": "Areas for Growth",
-      "careerSuggestions": "Career Suggestions",
-      "relationshipStyle": "Relationship Style",
-      "developmentTips": "Personal Growth Tips",
-      "fallbackSummary": "Analysis could not be generated",
-      "strength1": "Self-awareness",
-      "strength2": "Adaptability",
-      "challenge1": "Self-reflection",
-      "challenge2": "Growth mindset",
-      "career1": "Roles matching your interests",
-      "tip1": "Continue self-discovery",
-      "tip2": "Develop your strengths"
-    }
-  },
-  "language": {
-    "switch": "Language",
-    "english": "English",
-    "chinese": "中文 (繁體)"
-  },
   "medicalWelcome": {
     "title": "AI Health Assistant",
     "description": "Get personalized health insights powered by AI. Describe your symptoms and receive intelligent guidance on possible conditions and next steps.",
     "startButton": "Start Assessment",
-    "disclaimer": "This AI assistant is for informational purposes only and is not a substitute for professional medical care. Always consult healthcare professionals for medical concerns.",
+    "disclaimer": "This application is an experimental prototype developed for training and demonstration purposes. Not a Medical Tool: This AI is not a doctor. It cannot diagnose diseases, prescribe medication, or provide medical advice. Expect Errors: As a test model, the information generated may be inaccurate, outdated, or nonsensical. Use at Your Own Risk: Do not rely on this app for health decisions. Always consult a qualified medical professional for actual health concerns.",
     "emergencyWarning": "If you're experiencing a medical emergency, call emergency services immediately."
   },
   "symptomCollection": {
-    "title": "Tell us about your health",
-    "subtitle": "This information helps our AI provide more accurate assessments.",
     "nextButton": "Next",
     "primarySymptom": {
       "title": "What's your main health concern?",
@@ -128,26 +27,6 @@
         "preferNotToSay": "Prefer not to say"
       }
     },
-    "additionalSymptoms": {
-      "title": "Are you experiencing any other symptoms?",
-      "description": "Add any additional symptoms you're experiencing.",
-      "placeholder": "e.g., fever, nausea, fatigue, dizziness"
-    },
-    "medications": {
-      "title": "What medications are you currently taking?",
-      "description": "This helps us consider potential medication interactions or side effects.",
-      "placeholder": "e.g., aspirin, blood pressure medication, vitamins"
-    },
-    "allergies": {
-      "title": "Do you have any known allergies?",
-      "description": "Please include medication allergies and other known allergies.",
-      "placeholder": "e.g., penicillin, peanuts, pollen"
-    },
-    "medicalHistory": {
-      "title": "Do you have any relevant medical history?",
-      "description": "Include any chronic conditions, previous surgeries, or relevant health history.",
-      "placeholder": "e.g., diabetes, high blood pressure, recent surgery"
-    },
     "duration": {
       "placeholder": "Select duration",
       "lessThanHour": "Less than an hour",
@@ -159,26 +38,14 @@
       "oneMonth": "About one month",
       "fewMonths": "A few months",
       "moreThanSixMonths": "More than six months"
-    },
-    "severity": {
-      "noPain": "No pain",
-      "worstPain": "Worst possible",
-      "mild": "Mild",
-      "moderate": "Moderate",
-      "severe": "Severe",
-      "verySevere": "Very severe"
     }
   },
   "dynamicQuestion": {
-    "whyThisQuestion": "Why am I being asked this?",
     "next": "Next",
     "complete": "Complete Assessment",
-    "yes": "Yes",
-    "no": "No",
     "typeYourAnswer": "Type your answer here...",
     "singleQuestion": "Single Question",
     "oneThingAtATime": "We ask one question at a time for more accurate answers.",
-    "questionCount": "Questions asked: {{count}}",
     "leadingPossibilities": "Leading Possibilities",
     "scale": {
       "pleaseSelect": "Please select a level",
@@ -197,14 +64,10 @@
       "frequency": "Frequency",
       "triggers": "Triggers",
       "associated": "Associated Symptoms",
-      "medicalHistory": "Medical History",
-      "lifestyle": "Lifestyle",
       "general": "General"
     }
   },
   "diagnosisResults": {
-    "title": "Hello {{name}}, here are your health insights",
-    "subtitle": "Based on your symptom: {{symptom}}",
     "disclaimer": {
       "title": "Important Medical Disclaimer",
       "content": "This AI assessment is for informational purposes only and is not a substitute for professional medical diagnosis, treatment, or advice. Always consult qualified healthcare providers for any medical concerns."
@@ -269,6 +132,9 @@
     "analyzing": "Processing health information...",
     "finalizing": "Preparing your results...",
     "patient": "Patient",
+    "quit": {
+      "returnToHome": "Quit & Return to Home"
+    },
     "error": {
       "title": "Something went wrong",
       "generatingQuestions": "Unable to generate follow-up questions",
@@ -283,54 +149,5 @@
       "selfCare": "Rest and monitor symptoms",
       "whenToSeekCare": "If symptoms worsen or persist"
     }
-  },
-  "loading": {
-    "analyzing": "Analyzing your responses...",
-    "generating": "Generating personalized insights...",
-    "chatResponse": "Thinking..."
-  },
-  "error": {
-    "networkError": "Network error occurred. Please check your connection and try again.",
-    "apiError": "Something went wrong. Please try again.",
-    "validationError": "Please answer all questions Before submitting.",
-    "genericError": "An unexpected error occurred. Please try again.",
-    "tryAgain": "Try Again"
-  },
-  "chat": {
-    "placeholder": "Ask me anything about your personality type...",
-    "suggestedQuestionsTitle": "You can ask questions like:",
-    "suggestedQuestions": [
-      "What are my main strengths?",
-      "What careers would suit me well?",
-      "How do I handle relationships?",
-      "What should I work on improving?"
-    ],
-    "welcomeMessage": "Hi {{name}}! I'm here to answer your questions about your {{personalityType}} personality type. Feel free to ask me anything about your strengths, relationships, career paths, or personal growth!",
-    "errorMessage": "I'm sorry, I'm having trouble answering that question right now. Please try again or ask me something else about your personality type."
-  },
-  "resultChart": {
-    "extraversion": "Extraversion",
-    "introversion": "Introversion",
-    "sensing": "Sensing",
-    "intuition": "Intuition",
-    "thinking": "Thinking",
-    "feeling": "Feeling",
-    "judging": "Judging",
-    "perceiving": "Perceiving"
-  },
-  "octagonChart": {
-    "title": "Internal Octagon Evaluation",
-    "subtitle": "Comprehensive analysis of your MBTI preference distribution",
-    "balanceScore": "Balance Score",
-    "wellBalanced": "🎯 Well-Balanced",
-    "moderate": "⚖️ Moderate",
-    "strongPreferences": "📈 Strong Preferences",
-    "yourProfile": "Your profile",
-    "reference": "100% reference",
-    "understandingTheOctagon": "Understanding the Octagon:",
-    "outerRings": "Outer rings represent 100% preference strength",
-    "coloredArea": "Colored area shows your unique personality profile",
-    "balancedScore": "Balanced score indicates preference distribution",
-    "eightDimensions": "8 dimensions show both sides of each MBTI pair"
   }
 }

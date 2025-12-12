@@ -10,6 +10,7 @@ import {
     BodySystem,
     SymptomAnalysisResult
 } from '../types/symptomProfile';
+import { createInitialDiagnosticProgress } from './diagnosticProgress';
 // NOTE: We intentionally do NOT use the knowledge-graph QUESTION_STRATEGIES for next-question selection.
 // Next questions are AI-determined from answer history via `generateNextQuestionFallback(...)`.
 
@@ -22,9 +23,9 @@ type MedicalChatMessage = {
 
 // OpenRouter-only configuration
 const getOpenRouterConfig = () => {
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY_1;
-    const baseURL = process.env.REACT_APP_OPENAI_BASE_URL_1;
-    const model = process.env.REACT_APP_OPENAI_MODEL_1;
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+    const baseURL = process.env.REACT_APP_OPENAI_BASE_URL;
+    const model = process.env.REACT_APP_OPENAI_MODEL;
 
     if (!apiKey) {
         throw new Error('OpenRouter API key is required. Set REACT_APP_OPENAI_API_KEY_1 environment variable.');
@@ -137,29 +138,20 @@ export class AdaptiveDiagnosticSystem {
     private patientProfile: PatientProfile;
     private possibleDiagnoses: PossibleDiagnosis[] = [];
     private ruledOutConditions: RuledOutCondition[] = [];
-    private diagnosticProgress: DiagnosticProgress;
+    private diagnosticProgress: DiagnosticProgress = createInitialDiagnosticProgress();
     private questionHistory: string[] = [];
 
     constructor(patientProfile: PatientProfile) {
         this.patientProfile = patientProfile;
-        this.diagnosticProgress = {
-            totalQuestionsAsked: 0,
-            maxQuestions: 20,
-            currentConfidence: 0,
-            targetConfidence: 85,
-            possibleDiagnoses: [],
-            ruledOutConditions: [],
-            nextQuestionStrategy: 'discriminative',
-            informationGain: 0
-        };
-        this.initializeDiagnoses();
+        this.resetState();
     }
 
-    private initializeDiagnoses() {
+    private resetState() {
         // Initialize with AI-driven diagnosis - no hardcoded patterns
         this.possibleDiagnoses = [];
-        this.diagnosticProgress.possibleDiagnoses = this.possibleDiagnoses;
-        this.diagnosticProgress.currentConfidence = 0;
+        this.ruledOutConditions = [];
+        this.questionHistory = [];
+        this.diagnosticProgress = createInitialDiagnosticProgress();
     }
 
     private getConfidenceCategory(confidence: number): 'very_low' | 'low' | 'moderate' | 'high' | 'very_high' {
@@ -1170,8 +1162,7 @@ export const analyzeSymptoms = async (
     CLINICAL QUESTIONNAIRE DATA:
     ${JSON.stringify(symptomAnswers)}
 
-    /* INSTRUCTION */
-    Based on the patient profile and clinical data above, output the JSON array of the top 3 differential diagnoses.
+    Based on the patient profile and clinical data above, follow the system instructions to produce the differential diagnosis output.
     `;
 
     // Log the detailed prompt content

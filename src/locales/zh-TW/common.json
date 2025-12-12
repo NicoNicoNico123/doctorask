@@ -1,122 +1,12 @@
 {
-  "welcome": {
-    "title": "MBTI 人格測驗",
-    "description": "透過專為你個人化的問題，發現真實的自己。深入了解你的優點、人際關係和職業道路。",
-    "startButton": "開始測驗"
-  },
-  "dataCollection": {
-    "title": "讓我們為你個人化這次體驗",
-    "subtitle": "這能幫助我們根據你的生活階段和興趣來調整問題。",
-    "ageQuestion": "你幾歲？",
-    "age": "年齡",
-    "ageDescription": "年齡能幫助我們了解你的生活階段和經歷。",
-    "occupationQuestion": "你從事什麼工作？",
-    "occupation": "職業",
-    "occupationDescription": "你的工作背景能幫助我們創造相關的情境。",
-    "occupationPlaceholder": "例如：軟體工程師、學生、藝術家",
-    "genderQuestion": "你的性別是？",
-    "genderDescription": "這能幫助我們考慮不同的社會觀點。",
-    "hobbiesQuestion": "你有哪些興趣愛好？",
-    "hobbies": "興趣愛好",
-    "hobbiesDescription": "新增最多5個興趣標籤，幫助我們為你創造個人化的例子。",
-    "hobbiesPlaceholder": "例如：健行、遊戲、閱讀、攝影、烹飪",
-    "nextButton": "下一步",
-    "genderOptions": {
-      "male": "男性",
-      "female": "女性",
-      "nonBinary": "非二元性別",
-      "preferNotToSay": "不願回答"
-    }
-  },
-  "question": {
-    "progress": "第 {{current}} 題，共 {{total}} 題",
-    "optionA": "A",
-    "optionB": "B"
-  },
-  "navigation": {
-    "previous": "上一題",
-    "next": "下一題",
-    "submit": "提交"
-  },
-  "quit": {
-    "returnToHome": "離開並返回首頁"
-  },
-  "nameScreen": {
-    "title": "你叫什麼名字？",
-    "description": "讓我們知道你的名字，以便為你個人化結果。",
-    "placeholder": "輸入你的名字",
-    "nextButton": "下一步",
-    "completeButton": "完成並取得結果",
-    "finalStepHint": "快完成了！你的個人化 MBTI 結果僅差一步就能獲得。"
-  },
-  "tagInput": {
-    "noTagsPlaceholder": "使用 Enter 或逗號新增標籤",
-    "inputPlaceholder": "輸入後按 Enter 或逗號新增標籤",
-    "atLimitPlaceholder": "已達標籤數量上限",
-    "removeTag": "移除標籤",
-    "instructions": "輸入你的興趣，按 Enter 或逗號將它們新增為標籤。最多 {{maxTags}} 個標籤。"
-  },
-  "results": {
-    "title": "你的人格類型",
-    "subtitle": "根據你的回答，這是你的人格分析：",
-    "retakeTest": "🔄 重新測試",
-    "shareResults": "📤 分享結果",
-    "saveResults": "🖨️ 保存結果",
-    "continueChat": "繼續探索你的人格特質",
-    "analysisTitle": "人格分析",
-    "chatTitle": "關於你的人格類型提問",
-    "disclaimer": "此 MBTI 評估僅供教育和自我發現使用，並非臨床診斷。請將其視為更深入了解自己的起點。",
-    "analysisSubtitle": "基於你的 {{personalityType}} 人格類型的 AI 分析",
-    "analysis": {
-      "tabs": {
-        "overview": "概覽",
-        "career": "職業",
-        "relationships": "人際關係",
-        "growth": "成長"
-      },
-      "overview": "概覽",
-      "strengths": "優點",
-      "growthAreas": "成長領域",
-      "careerSuggestions": "職業建議",
-      "relationshipStyle": "人際關係風格",
-      "developmentTips": "個人成長建議",
-      "fallbackSummary": "無法生成分析",
-      "strength1": "自我覺察",
-      "strength2": "適應能力",
-      "challenge1": "自我反思",
-      "challenge2": "成長心態",
-      "career1": "符合你興趣的職業角色",
-      "tip1": "繼續自我探索",
-      "tip2": "發展你的優點"
-    },
-    "yourProfile": "你的個人資料",
-    "quickActions": "快速操作",
-    "resultChart": {
-      "extraversion": "外向",
-      "introversion": "內向",
-      "sensing": "感覺",
-      "intuition": "直覺",
-      "thinking": "思考",
-      "feeling": "情感",
-      "judging": "判斷",
-      "perceiving": "感知"
-    }
-  },
-  "language": {
-    "switch": "語言",
-    "english": "English",
-    "chinese": "中文 (繁體)"
-  },
   "medicalWelcome": {
     "title": "AI 健康助理",
     "description": "透過 AI 獲得個人化健康洞察。描述你的症狀，就能得到關於可能病情和下一步行動的智能指引。",
     "startButton": "開始評估",
-    "disclaimer": "此 AI 助理僅供資訊參考，不能取代專業醫療護理。如有醫療疑慮，務必諮詢醫療專業人員。",
+    "disclaimer": "免責聲明：僅供測試與教學用途\n本應用程式為實驗性原型（Prototype），僅供技術展示與學術交流使用。\n非醫療建議： 此 AI 模型並非專業醫師。它無法進行診斷、開立處方或提供任何形式的正規醫療建議。\n\n準確性警告： 由於這是測試用的 AI 模型，生成的內容可能不準確、過時或完全錯誤。\n\n風險自負： 請勿依賴本程式的回答來做任何健康決定。若有任何健康疑慮，請務必諮詢合格的專業醫師。",
     "emergencyWarning": "如果你正處於醫療緊急情況，請立即撥打緊急服務電話。"
   },
   "symptomCollection": {
-    "title": "告訴我們你的健康狀況",
-    "subtitle": "這些資訊能幫助我們的 AI 提供更準確的評估。",
     "nextButton": "下一步",
     "primarySymptom": {
       "title": "你的主要健康問題是什麼？",
@@ -137,26 +27,6 @@
         "preferNotToSay": "不願回答"
       }
     },
-    "additionalSymptoms": {
-      "title": "你是否有其他症狀？",
-      "description": "請列出你正在經歷的任何其他症狀。",
-      "placeholder": "例如：發燒、噁心、疲勞、頭暈"
-    },
-    "medications": {
-      "title": "你目前正在服用什麼藥物？",
-      "description": "這能幫助我們考慮潛在的藥物相互作用或副作用。",
-      "placeholder": "例如：阿斯匹靈、降血壓藥、維他命"
-    },
-    "allergies": {
-      "title": "你是否有已知的過敏？",
-      "description": "請包括藥物過敏和其他已知過敏。",
-      "placeholder": "例如：盤尼西林、花生、花粉"
-    },
-    "medicalHistory": {
-      "title": "你有相關的病史嗎？",
-      "description": "請包括慢性疾病、過往手術或相關健康史。",
-      "placeholder": "例如：糖尿病、高血壓、近期手術"
-    },
     "duration": {
       "placeholder": "選擇持續時間",
       "lessThanHour": "少於一小時",
@@ -168,26 +38,14 @@
       "oneMonth": "約一個月",
       "fewMonths": "幾個月",
       "moreThanSixMonths": "超過六個月"
-    },
-    "severity": {
-      "noPain": "無痛",
-      "worstPain": "最嚴重",
-      "mild": "輕微",
-      "moderate": "中等",
-      "severe": "嚴重",
-      "verySevere": "非常嚴重"
     }
   },
   "dynamicQuestion": {
-    "whyThisQuestion": "為什麼要問這個問題？",
     "next": "下一步",
     "complete": "完成評估",
-    "yes": "是",
-    "no": "否",
     "typeYourAnswer": "在這裡輸入你的答案...",
     "singleQuestion": "單一問題",
     "oneThingAtATime": "我們一次只問一個問題，以獲得更準確的答案。",
-    "questionCount": "已提問數量：{{count}}",
     "leadingPossibilities": "主要可能性",
     "scale": {
       "pleaseSelect": "請選擇程度",
@@ -206,14 +64,10 @@
       "frequency": "頻率",
       "triggers": "誘發因素",
       "associated": "相關症狀",
-      "medicalHistory": "病史",
-      "lifestyle": "生活習慣",
       "general": "一般"
     }
   },
   "diagnosisResults": {
-    "title": "{{name}}，你好，這是你的健康洞察",
-    "subtitle": "基於你的症狀：{{symptom}}",
     "disclaimer": {
       "title": "重要醫療免責聲明",
       "content": "此 AI 評估僅供資訊參考，不能取代專業醫療診斷、治療或建議。如有任何醫療疑慮，務必諮詢合格的醫療保健提供者。"
@@ -278,6 +132,9 @@
     "analyzing": "正在處理健康資訊...",
     "finalizing": "正在準備你的結果...",
     "patient": "病患",
+    "quit": {
+      "returnToHome": "離開並返回首頁"
+    },
     "error": {
       "title": "出了點問題",
       "generatingQuestions": "無法生成後續問題",
@@ -292,44 +149,5 @@
       "selfCare": "休息並監測症狀",
       "whenToSeekCare": "如果症狀惡化或持續"
     }
-  },
-  "loading": {
-    "analyzing": "正在分析你的回答...",
-    "generating": "正在生成個人化見解...",
-    "chatResponse": "思考中..."
-  },
-  "error": {
-    "networkError": "發生網路錯誤。請檢查你的連線後重試。",
-    "apiError": "出了點問題。請重試。",
-    "validationError": "請在提交前回答所有問題。",
-    "genericError": "發生意外錯誤。請重試。",
-    "tryAgain": "重試"
-  },
-  "chat": {
-    "placeholder": "問我任何關於你人格類型的問題...",
-    "suggestedQuestionsTitle": "你可以問這樣的問題：",
-    "suggestedQuestions": [
-      "我的主要優點是什麼？",
-      "什麼職業適合我？",
-      "我如何處理人際關係？",
-      "我應該改進什麼？"
-    ],
-    "welcomeMessage": "嗨 {{name}}！我在這裡回答你關於 {{personalityType}} 人格類型的問題。隨時問我關於你的優點、人際關係、職業道路或個人成長的任何事！",
-    "errorMessage": "抱歉，我現在無法回答那個問題。請再試一次或問我關於你人格類型的其他問題。"
-  },
-  "octagonChart": {
-    "title": "內部八邊形評估",
-    "subtitle": "你的 MBTI 偏好分布綜合分析",
-    "balanceScore": "平衡分數",
-    "wellBalanced": "🎯 均衡發展",
-    "moderate": "⚖️ 適度偏好",
-    "strongPreferences": "📈 明顯偏好",
-    "yourProfile": "你的個人資料",
-    "reference": "100% 參考線",
-    "understandingTheOctagon": "理解八邊形圖：",
-    "outerRings": "外圈代表 100% 偏好強度",
-    "coloredArea": "彩色區域顯示你獨特的人格特質",
-    "balancedScore": "平衡分數表示偏好分布",
-    "eightDimensions": "8 個維度顯示每對 MBTI 的兩面"
   }
 }

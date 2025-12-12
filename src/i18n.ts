@@ -5,12 +5,8 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translation files
 import enCommon from './locales/en/common.json';
-import enPersonalityTypes from './locales/en/personalityTypes.json';
-import enQuestions from './locales/en/questions.json';
-import enPrompts from './locales/en/prompts.json';
 import zhTWCommon from './locales/zh-TW/common.json';
-import zhTWPersonalityTypes from './locales/zh-TW/personalityTypes.json';
-import zhTWQuestions from './locales/zh-TW/questions.json';
+import enPrompts from './locales/en/prompts.json';
 import zhTWPrompts from './locales/zh-TW/prompts.json';
 
 // Language detection options
@@ -53,6 +49,7 @@ i18n
 
     // Default namespace
     defaultNS: 'common',
+    ns: ['common', 'prompts'],
 
     // Debug mode
     debug: false,
@@ -61,14 +58,10 @@ i18n
     resources: {
       en: {
         common: enCommon,
-        personalityTypes: enPersonalityTypes,
-        questions: enQuestions,
         prompts: enPrompts,
       },
       'zh-TW': {
         common: zhTWCommon,
-        personalityTypes: zhTWPersonalityTypes,
-        questions: zhTWQuestions,
         prompts: zhTWPrompts,
       }
     },
