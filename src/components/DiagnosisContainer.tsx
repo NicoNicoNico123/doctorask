@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import WelcomeScreen from './WelcomeScreen';
 import SymptomCollectionCard from './SymptomCollectionCard';
@@ -60,6 +60,9 @@ const DiagnosisContainer: React.FC = () => {
     const [questionAnswers, setQuestionAnswers] = useState<Record<number, any>>({});
     const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
     const [guidance, setGuidance] = useState<MedicalGuidance | null>(null);
+
+    // Guard against out-of-order async updates (latest diagnosis run should win)
+    const diagnosisRunIdRef = useRef(0);
 
     // Enhanced adaptive diagnostic system state
     const [adaptiveSystem, setAdaptiveSystem] = useState<AdaptiveDiagnosticSystem | null>(null);
@@ -522,8 +525,11 @@ const DiagnosisContainer: React.FC = () => {
     };
 
     const performDiagnosis = async (answersOverride?: Record<number, any>) => {
+        const runId = ++diagnosisRunIdRef.current;
         setIsLoading(true);
         setError(null);
+        // Force the results view to wait for fresh guidance for this run (avoids showing stale guidance)
+        setGuidance(null);
 
         try {
             const answersToUse = answersOverride ?? questionAnswers;
@@ -534,6 +540,8 @@ const DiagnosisContainer: React.FC = () => {
             });
 
             const diagnosisResults = await analyzeSymptoms(patientContext, answersToUse);
+            // If a newer diagnosis run started while we were awaiting, ignore this result
+            if (runId !== diagnosisRunIdRef.current) return;
             // Ensure diagnoses is always an array
             const diagnosesArray = Array.isArray(diagnosisResults) ? diagnosisResults : [];
             setDiagnoses(diagnosesArray);
@@ -554,13 +562,15 @@ const DiagnosisContainer: React.FC = () => {
             }
 
             // Get guidance with diagnoses
-            const updatedGuidance = await getMedicalGuidance(diagnosisResults, patientContext);
+            const updatedGuidance = await getMedicalGuidance(diagnosesArray, patientContext);
+            if (runId !== diagnosisRunIdRef.current) return;
             setGuidance(updatedGuidance);
 
             // Always proceed to results (name is optional; UI will fall back to "Patient")
             setStep('results');
         } catch (error) {
             console.error('Error performing diagnosis:', error);
+            if (runId !== diagnosisRunIdRef.current) return;
             setError(t('diagnosisContainer.error.performingDiagnosis'));
 
             // Create fallback results
@@ -582,7 +592,9 @@ const DiagnosisContainer: React.FC = () => {
 
             setStep('results');
         } finally {
-            setIsLoading(false);
+            if (runId === diagnosisRunIdRef.current) {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -603,6 +615,7 @@ const DiagnosisContainer: React.FC = () => {
 
     const handleRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
+        diagnosisRunIdRef.current += 1; // cancel any in-flight diagnosis run
         setStep('welcome');
         setDataStep(0);
         setPatientContext({
@@ -619,6 +632,9 @@ const DiagnosisContainer: React.FC = () => {
         setDiagnoses([]);
         setGuidance(null);
         setError(null);
+        setAdaptiveSystem(null);
+        setDiagnosticProgress(undefined);
+        setRuledOutConditions([]);
     };
 
     const renderWithStartOver = (

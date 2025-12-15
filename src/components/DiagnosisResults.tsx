@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Diagnosis, MedicalGuidance } from '../services/medicalAIService';
 import MedicalChat from './MedicalChat';
@@ -19,6 +19,12 @@ const DiagnosisResults: React.FC<DiagnosisResultsProps> = ({
     const { t } = useTranslation();
     const [showChat, setShowChat] = useState(false);
     const [selectedDiagnosis, setSelectedDiagnosis] = useState<Diagnosis | null>(null);
+
+    // If diagnoses refresh (new run), reset chat/selection so the UI can't appear "stuck" on older results.
+    useEffect(() => {
+        setShowChat(false);
+        setSelectedDiagnosis(null);
+    }, [diagnoses]);
 
     const getUrgencyColor = (urgency: string) => {
         switch (urgency) {
@@ -140,7 +146,7 @@ const DiagnosisResults: React.FC<DiagnosisResultsProps> = ({
 
                 {Array.isArray(diagnoses) && diagnoses.length > 0 ? diagnoses.map((diagnosis, index) => (
                     <div
-                        key={index}
+                        key={`${diagnosis.condition}-${diagnosis.probability}-${index}`}
                         className="bg-white border border-gray-200 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow"
                     >
                         <div className="flex items-start justify-between mb-4">
