@@ -63,6 +63,12 @@ const DiagnosisContainer: React.FC = () => {
 
     // Guard against out-of-order async updates (latest diagnosis run should win)
     const diagnosisRunIdRef = useRef(0);
+    // Cache the initial diagnoses used for the "no questions needed" decision.
+    // This avoids a second model call overwriting probabilities on the results page.
+    const initialDiagnosesRef = useRef<Diagnosis[] | null>(null);
+    // Cache the latest AI diagnoses from the real-time analysis loop (dynamic questions).
+    // When we stop due to hitting target confidence, reuse these diagnoses for final results.
+    const latestRealtimeDiagnosesRef = useRef<Diagnosis[] | null>(null);
 
     // Enhanced adaptive diagnostic system state
     const [adaptiveSystem, setAdaptiveSystem] = useState<AdaptiveDiagnosticSystem | null>(null);
@@ -191,6 +197,8 @@ const DiagnosisContainer: React.FC = () => {
     const generateFirstQuestion = async () => {
         setIsLoading(true);
         setError(null);
+        // New run: clear any previously cached initial diagnoses.
+        initialDiagnosesRef.current = null;
 
         try {
             // Create adaptive diagnostic system
@@ -214,6 +222,7 @@ const DiagnosisContainer: React.FC = () => {
             console.log('🔍 Performing initial AI analysis for diagnosis translation...');
             try {
                 const initialDiagnoses = await analyzeSymptoms(patientContext, {});
+                initialDiagnosesRef.current = initialDiagnoses;
                 if (initialDiagnoses.length > 0) {
                     adaptive.updateWithAIDiagnoses(initialDiagnoses);
                     console.log('🔍 Initial AI diagnoses updated with translations:', initialDiagnoses.map(d => d.condition));
@@ -260,7 +269,7 @@ const DiagnosisContainer: React.FC = () => {
                     shouldStop: response.shouldStop,
                     hasQuestion: !!response.question,
                     stopReason: response.stopReason
-                });
+                }, undefined, initialDiagnosesRef.current ?? undefined);
             }
         } catch (error) {
             console.error('Error generating enhanced first question:', error);
@@ -330,14 +339,15 @@ const DiagnosisContainer: React.FC = () => {
                 // AI-only confidence analysis (no heuristic confidence)
                 try {
                     // Update adaptive system with real-time AI analysis
-                    const aiProgress = await adaptiveSystem.updateWithRealTimeAnalysis(answersSnapshot);
-                    aiConfidence = aiProgress.currentConfidence;
-                    aiTopDiagnosis = aiProgress.possibleDiagnoses[0]?.name || '';
+                    const aiUpdate = await adaptiveSystem.updateWithRealTimeAnalysis(answersSnapshot);
+                    latestRealtimeDiagnosesRef.current = aiUpdate.diagnoses;
+                    aiConfidence = aiUpdate.progress.currentConfidence;
+                    aiTopDiagnosis = aiUpdate.progress.possibleDiagnoses[0]?.name || '';
 
                     console.log('🤖 DEBUG - AI confidence analysis:', {
                         aiConfidence,
                         aiTopDiagnosis,
-                        aiDiagnoses: aiProgress.possibleDiagnoses.slice(0, 3).map(d => `${d.name}: ${d.confidence.toFixed(1)}%`)
+                        aiDiagnoses: aiUpdate.progress.possibleDiagnoses.slice(0, 3).map(d => `${d.name}: ${d.confidence.toFixed(1)}%`)
                     });
                 } catch (error) {
                     console.warn('⚠️ AI confidence analysis failed:', error);
@@ -436,7 +446,7 @@ const DiagnosisContainer: React.FC = () => {
                     shouldStop: response.shouldStop,
                     hasQuestion: !!response.question,
                     aiConfidence
-                }, answersSnapshot);
+                }, answersSnapshot, latestRealtimeDiagnosesRef.current ?? undefined);
             }
         } catch (error) {
             console.error('Error generating enhanced next question:', error);
@@ -524,7 +534,7 @@ const DiagnosisContainer: React.FC = () => {
         return BodySystem.GENERAL;
     };
 
-    const performDiagnosis = async (answersOverride?: Record<number, any>) => {
+    const performDiagnosis = async (answersOverride?: Record<number, any>, diagnosesOverride?: Diagnosis[]) => {
         const runId = ++diagnosisRunIdRef.current;
         setIsLoading(true);
         setError(null);
@@ -539,7 +549,9 @@ const DiagnosisContainer: React.FC = () => {
                 step,
             });
 
-            const diagnosisResults = await analyzeSymptoms(patientContext, answersToUse);
+            // Reuse already-computed diagnoses when available (e.g., no-question path),
+            // otherwise call the model.
+            const diagnosisResults = diagnosesOverride ?? (await analyzeSymptoms(patientContext, answersToUse));
             // If a newer diagnosis run started while we were awaiting, ignore this result
             if (runId !== diagnosisRunIdRef.current) return;
             // Ensure diagnoses is always an array
@@ -601,7 +613,8 @@ const DiagnosisContainer: React.FC = () => {
     const proceedToDiagnosis = async (
         reason: string,
         meta?: Record<string, any>,
-        answersOverride?: Record<number, any>
+        answersOverride?: Record<number, any>,
+        diagnosesOverride?: Diagnosis[]
     ) => {
         console.log('🛑 Proceeding to diagnosis:', {
             reason,
@@ -610,12 +623,14 @@ const DiagnosisContainer: React.FC = () => {
             questionHistoryLen: questionHistory.length,
             meta
         });
-        await performDiagnosis(answersOverride);
+        await performDiagnosis(answersOverride, diagnosesOverride);
     };
 
     const handleRestart = () => {
         localStorage.removeItem(STORAGE_KEY);
         diagnosisRunIdRef.current += 1; // cancel any in-flight diagnosis run
+        initialDiagnosesRef.current = null;
+        latestRealtimeDiagnosesRef.current = null;
         setStep('welcome');
         setDataStep(0);
         setPatientContext({

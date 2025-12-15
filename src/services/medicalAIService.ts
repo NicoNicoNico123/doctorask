@@ -472,7 +472,12 @@ export class AdaptiveDiagnosticSystem {
     }
 
     // NEW METHOD: Update system with real-time AI analysis
-    public async updateWithRealTimeAnalysis(symptomAnswers?: Record<number, any>): Promise<DiagnosticProgress> {
+    public async updateWithRealTimeAnalysis(symptomAnswers?: Record<number, any>): Promise<{
+        progress: DiagnosticProgress;
+        diagnoses: Diagnosis[];
+        confidence: number;
+        reasoning: string;
+    }> {
         try {
             const aiAnalysis = await this.getRealTimeAIAnalysis(symptomAnswers);
 
@@ -486,10 +491,20 @@ export class AdaptiveDiagnosticSystem {
                 reasoning: aiAnalysis.reasoning
             });
 
-            return this.diagnosticProgress;
+            return {
+                progress: this.diagnosticProgress,
+                diagnoses: aiAnalysis.diagnoses,
+                confidence: aiAnalysis.confidence,
+                reasoning: aiAnalysis.reasoning
+            };
         } catch (error) {
             console.error('❌ Failed to update with real-time analysis:', error);
-            return this.diagnosticProgress;
+            return {
+                progress: this.diagnosticProgress,
+                diagnoses: [],
+                confidence: 0,
+                reasoning: 'AI analysis unavailable'
+            };
         }
     }
 
